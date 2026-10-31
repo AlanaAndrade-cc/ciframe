@@ -40,6 +40,12 @@
 > `/tmp` (`tag_summary.py`, `tag_semantics.py`, `q2_report.py`, `chord_vocab.py`).
 > O servidor Flask foi executado a partir de uma venv descartável em
 > `/tmp/deciframe-venv` e encerrado ao final.
+>
+> O HEAD atual (`bb6c785`) apenas acrescenta o template de feedback RePPIT; o
+> código observado continua sendo o de `749bc21`. A segunda passagem acrescentou
+> os scripts descartáveis `/tmp/hypotheses_metrics.py` e
+> `/tmp/extra_metrics.py`, com saídas em `/tmp/hypotheses_metrics.out` e
+> `/tmp/extra_metrics.out`.
 
 ### 1. Algoritmo de matching hoje
 
@@ -84,10 +90,14 @@
   `scripts/generate_data_set.py:7-24`: a lista `seqs` contém as seis sequências
   em minúsculas separadas por `;` (`scripts/generate_data_set.py:8`); o código
   lowercasa a string inteira de acordes da música (`scripts/generate_data_set.py:12`),
-  testa `if s in acorde` (`scripts/generate_data_set.py:13`) e depois confere
-  cada acorde da sequência contra os tokens da música
-  (`scripts/generate_data_set.py:16-20`); o índice da sequência é convertido em
-  string e acumulado (`scripts/generate_data_set.py:21-23`).
+  testa `if s in acorde` (`scripts/generate_data_set.py:13`) e depois percorre
+  os tokens da música, exigindo que cada um pertença ao conjunto de acordes da
+  sequência (`scripts/generate_data_set.py:16-20`); o índice da sequência é
+  convertido em string e acumulado (`scripts/generate_data_set.py:21-23`).
+  A releitura do laço é importante: `l` é um acorde da música e `tokens` é a
+  sequência; portanto a tag não exige apenas a ocorrência contígua, mas também
+  que a música não tenha nenhum acorde fora do vocabulário da sequência. Essa
+  condição é reproduzida e medida em §2.3.
 - Na geração do CSV, `famosas = ''.join(get_famosas(str_notas))`
   (`scripts/generate_data_set.py:86-88`) concatena os índices sem separador. Se
   mais de uma sequência casasse, o resultado seria algo como `"01"`, e
@@ -143,6 +153,37 @@
   catálogo é o literal `sequencias` (`main.py:40-45`).
 - Não existe banco de dados, esquema, migração ou arquivo de persistência para
   sequências no repositório.
+
+#### 1.5 Hipóteses candidatas de matching (Q1)
+
+As hipóteses abaixo são regras possíveis; nenhuma foi escolhida. Salvo indicação
+contrária, a comparação é feita sobre `musica.cifra` (`musica.py:16`) com tokens
+em minúsculas, e a sequência é uma lista ordenada de tokens. A representação
+`musica.acordes` (`musica.py:17`) só permite regras sem ordem e sem repetição,
+porque é `list(set(cifra))`.
+
+| # | Hipótese | O que casaria | Casos de borda | Como validar contra as tags |
+|---|---|---|---|---|
+| H1 | **Tag-like / legado** | A sequência aparece como bloco contíguo **e** todo acorde da música pertence ao vocabulário da sequência. É a condição que o gerador de tags tenta expressar (`scripts/generate_data_set.py:12-20`). | Qualquer acorde extra na música desqualifica, mesmo que a sequência apareça; repetições de acordes da sequência são permitidas; a ordem e a adjacência importam. | É a única hipótese testada que reproduz exatamente as tags das 6 sequências (FP=0, FN=0 em §2.3). |
+| H2 | **Contígua ordenada** | A sequência aparece como uma janela consecutiva de `musica.cifra`, na ordem dada; acordes antes ou depois da janela são permitidos. | Um acorde de passagem entre dois acordes da sequência quebra o match; a sequência pode aparecer mais de uma vez; repetição dentro da janela conta. | Contém todas as músicas com tag, mas adiciona centenas ou milhares de falsos positivos (§2.3). |
+| H3 | **Subsequência ordenada** | Os acordes da sequência aparecem na ordem dada, mas não precisam ser consecutivos; outros acordes podem ficar entre eles. | Aceita uma sequência “espalhada” pela música; a ordem ainda importa; repetições da música podem ser usadas como parte da subsequência. | Contém todas as tags e amplia muito o conjunto; mede o custo de ignorar a adjacência (§2.3). |
+| H4 | **Inclusão de conjunto** | Todos os acordes da sequência aparecem em qualquer posição da música; usa `musica.acordes` ou um `set` da cifra. | Ignora ordem e repetição; permite acordes extras; sem normalização, `Am7` e `AM7` são tokens diferentes. | Contém todas as tags; é a hipótese mais permissiva entre as que ainda exigem todos os acordes (§2.3). |
+| H5 | **Inclusão de multiconjunto** | Como H4, mas exige que a música tenha pelo menos a multiplicidade de cada acorde da sequência. | Para as 6 atuais, o resultado é igual a H4 porque nenhuma sequência repete acorde; para uma sequência com repetição, exige repetição na música. | Comparar H5 com H4; a diferença só aparece em consultas com acorde repetido, que precisam de teste sintético. |
+| H6 | **Igualdade de conjunto** | O vocabulário da música é exatamente o vocabulário da sequência, em qualquer ordem. | Não exige adjacência; permite ordem trocada; ignora repetição; não permite acorde extra. | Reproduz as tags de `EmG`, `GmF` e `CC7FFm`, mas não as de `BmGDA`, `CGAmF` e `CA7DmG7` (§2.3). |
+| H7 | **Igualdade de multiconjunto** | A música tem exatamente os mesmos acordes da sequência, com as mesmas multiplicidades, em qualquer ordem. | Muito restritiva; repetição e acordes extras contam; a ordem não importa. | Tem recall baixo contra as tags: a maioria das músicas com tag repete acordes ou usa acordes do vocabulário além da sequência (§2.3). |
+| H8 | **Contígua com colapso de repetições imediatas** | Antes de procurar o bloco, colapsa runs consecutivos iguais (`A;A;B` vira `A;B`). | Só afeta repetições imediatas; repetições separadas continuam contando; pode unir duas ocorrências vizinhas. | Contém todas as tags; muda pouco os totais das 6 (§2.3). |
+
+**Variações transversais às hipóteses.** Elas não são regras completas; são
+decisões de normalização que podem ser combinadas com H1-H8.
+
+| Variação | O que mudaria | Evidência atual | Como validar |
+|---|---|---|---|
+| Caixa (maiúsculas/minúsculas) | Comparar tokens em minúsculas ou exatamente como escritos. O gerador já lowercasa (`scripts/generate_data_set.py:12`), mas `limpa_cifra` preserva a caixa (`main.py:11-23`). | O vocabulário tem 6.653 tokens distintos e 6.500 formas em minúsculas, com 151 grupos de colisão, como `Am7`/`AM7`, `Cm7`/`CM7` e `G/B`/`G/b`. Nas 6 sequências, a contagem case-sensitive é igual à case-insensitive. | Comparar as duas contagens e usar os pares de colisão como casos sintéticos. |
+| Enarmônicos | Tratar `C#`/`Db`, `D#`/`Eb`, `F#`/`Gb`, `G#`/`Ab` e `A#`/`Bb` como o mesmo acorde. | Hoje não há normalização; as contagens de cada grafia diferem (§1.3), então a escolha muda o conjunto de matches. | Criar uma tabela de equivalência e comparar os resultados com e sem ela. |
+| Tokens não acordais | Filtrar tokens como `1a.vez`, `2x`, `:`, `4`, `11` e `13)` antes de procurar a sequência. | Há 13 tokens distintos sem letra e 21 músicas que os contêm (§1.3); eles podem quebrar uma janela contígua. | Medir os matches antes e depois do filtro e inspecionar as músicas afetadas. |
+| Repetição | Ignorar repetições, colapsar apenas runs consecutivos ou exigir multiplicidade. | As 6 sequências não repetem acordes, então H4 e H5 coincidem; H7 perde quase todas as tags; H8 muda pouco. | Usar sequências sintéticas com acordes repetidos e músicas com repetições imediatas e separadas. |
+| String bruta vs. tokens | O gerador testa a string bruta separada por `;` (`scripts/generate_data_set.py:12-20`); o runtime usa `limpa_cifra` (`main.py:11-23`), que remove vazios, lida com `\|` e separa por espaço. | Para as 6 atuais, a regra sobre a string bruta e a regra sobre tokens limpos produzem o mesmo conjunto de tags (§2.3). | Comparar as duas implementações em músicas com `\|`, espaços e tokens vazios. |
+| Sequência vazia/desconhecida | Definir se vazio, só espaços, acorde inexistente ou caixa errada retornam `[]`, erro ou match vazio. | Hoje a única transformação é remover vírgulas (`main.py:191`); chave desconhecida retorna `[]` com HTTP 200. | Testar entradas vazias, com espaços, com vírgulas, com acorde inexistente e com caixa trocada. |
 
 ### 2. Validação com os dados reais (`data/top/dataset_final.csv`) — Q2
 
@@ -806,6 +847,101 @@ página (`main.py:35,226-228`).
 | 2 | Revelação | Jogo de Sedução | 83084 | `revelacao_jogo-de-seducao` |
 | 3 | Claudia Leitte | Bem Vindo Amor | 41621 | `claudia-leitte_bem-vindo-amor` |
 
+#### 2.3 Hipóteses candidatas aplicadas aos dados (Q2)
+
+O script `/tmp/hypotheses_metrics.py` replica o carregamento de `main.py` e
+compara cada hipótese de §1.5 com o conjunto de músicas que têm a tag. Comando
+executado:
+
+```bash
+python3 /tmp/hypotheses_metrics.py
+```
+
+A saída completa ficou em `/tmp/hypotheses_metrics.out`. A tabela abaixo usa a
+forma **total de matches (falsos positivos / falsos negativos)** em relação ao
+conjunto de tags; falsos positivos são músicas que a regra casa e a tag não
+marca, e falsos negativos são músicas marcadas pela tag que a regra não casa.
+
+| Hipótese | `BmGDA` | `CGAmF` | `EmG` | `CA7DmG7` | `GmF` | `CC7FFm` |
+|---|---:|---:|---:|---:|---:|---:|
+| H1 tag-like | 199 (0/0) | 296 (0/0) | 4 (0/0) | 5 (0/0) | 7 (0/0) | 3 (0/0) |
+| H2 contígua ordenada | 866 (667/0) | 1.216 (920/0) | 3.110 (3.106/0) | 96 (91/0) | 1.039 (1.032/0) | 132 (129/0) |
+| H3 subsequência ordenada | 4.763 (4.564/0) | 5.887 (5.591/0) | 13.643 (13.639/0) | 427 (422/0) | 3.641 (3.634/0) | 280 (277/0) |
+| H4 inclusão de conjunto | 5.768 (5.569/0) | 6.894 (6.598/0) | 14.160 (14.156/0) | 582 (577/0) | 3.847 (3.840/0) | 365 (362/0) |
+| H5 inclusão de multiconjunto | 5.768 (5.569/0) | 6.894 (6.598/0) | 14.160 (14.156/0) | 582 (577/0) | 3.847 (3.840/0) | 365 (362/0) |
+| H6 igualdade de conjunto | 395 (196/0) | 532 (236/0) | 4 (0/0) | 6 (1/0) | 7 (0/0) | 3 (0/0) |
+| H7 igualdade de multiconjunto | 5 (3/197) | 5 (4/295) | 0 (0/4) | 0 (0/5) | 0 (0/7) | 0 (0/3) |
+| H8 contígua com runs colapsados | 882 (683/0) | 1.235 (939/0) | 3.110 (3.106/0) | 96 (91/0) | 1.039 (1.032/0) | 132 (129/0) |
+
+Resultado bruto que confirma a leitura do gerador de tags:
+
+```text
+tag_rule equals contiguous_subset for all sequences?
+  BmGDA True tag=199 cs=199 only_tag=0 only_cs=0
+  CGAmF True tag=296 cs=296 only_tag=0 only_cs=0
+  EmG True tag=4 cs=4 only_tag=0 only_cs=0
+  CA7DmG7 True tag=5 cs=5 only_tag=0 only_cs=0
+  GmF True tag=7 cs=7 only_tag=0 only_cs=0
+  CC7FFm True tag=3 cs=3 only_tag=0 only_cs=0
+```
+
+A diferença entre H1 e H2 não é de ordem nem de adjacência: é o vocabulário
+fechado. A tabela seguinte parte das músicas que contêm a sequência como bloco
+contíguo e separa as que têm algum acorde fora da sequência.
+
+| Sequência | Contíguas (H2) | Sem acorde fora da sequência | Com acorde fora da sequência |
+|---|---:|---:|---:|
+| `BmGDA` | 866 | 199 | 667 |
+| `CGAmF` | 1.216 | 296 | 920 |
+| `EmG` | 3.110 | 4 | 3.106 |
+| `CA7DmG7` | 96 | 5 | 91 |
+| `GmF` | 1.039 | 7 | 1.032 |
+| `CC7FFm` | 132 | 3 | 129 |
+
+Exemplos de falsos positivos mais populares, para mostrar o tipo de música que
+cada regra acrescenta:
+
+- **H2 (contígua):** `BmGDA` casa Darvin — “Pensa Em Mim” (2.311.345); `CGAmF`
+  casa Victor e Leo — “Fotos” (3.484.507); `EmG` casa Jorge e Mateus — “De
+  Tanto Te Querer” (2.588.459); `CA7DmG7` casa Bruno e Marrone — “Apenas um
+  Sorriso” (166.229); `GmF` casa The Beatles — “Hey Jude” (1.938.036); e
+  `CC7FFm` casa Bruno e Marrone — “Acorrentado Em Você” (557.361).
+- **H3 (subsequência):** `BmGDA` casa Skank — “Sutilmente” (3.104.944);
+  `CGAmF` casa Red Hot Chili Peppers — “Californication” (4.401.236); `EmG`
+  casa Legião Urbana — “Pais e Filhos” (4.973.242).
+- **H4/H5 (conjunto/multiconjunto):** `BmGDA` e `CGAmF` também casam Red Hot
+  Chili Peppers — “Californication” (4.401.236); `EmG` casa Legião Urbana —
+  “Pais e Filhos” (4.973.242); `GmF` casa Cássia Eller — “Malandragem”
+  (3.145.635); `CC7FFm` casa Bruno e Marrone — “Boate Azul” (2.736.687).
+- **H6 (igualdade de conjunto):** `BmGDA` casa Mamonas Assassinas — “Sábado de
+  Sol” (813.726); `CGAmF` casa Clarice Falcão — “De Todos Os Loucos do Mundo”
+  (604.443); `CA7DmG7` casa Os Originais do Samba — “Samba da Vizinha”
+  (1.812). Para `EmG`, `GmF` e `CC7FFm`, H6 não teve falso positivo.
+- **H7 (igualdade de multiconjunto):** `BmGDA` casa Ministério Nova Geração —
+  “Eu Anseio” (2.590); `CGAmF` casa Aviões do Forró — “Lapada Na Rachada”
+  (60.044).
+
+Observações sobre os resultados:
+
+- H1 é a única hipótese que reproduz as tags exatamente para as 6 sequências.
+  Isso é evidência de compatibilidade com o legado, não uma escolha de solução.
+- H2, H3, H4 e H5 têm zero falsos negativos: todas as músicas com tag são
+  incluídas, mas o conjunto cresce muito. H6 também tem zero falsos negativos
+  nas 6, mas só porque a tag implica que a música contém todos os acordes da
+  sequência; ela ainda adiciona falsos positivos em `BmGDA`, `CGAmF` e
+  `CA7DmG7`.
+- H7 tem recall baixo: só 2 das 199 tags de `BmGDA` e 1 das 296 tags de `CGAmF`
+  têm exatamente o multiconjunto da sequência. A maioria das músicas com tag
+  repete acordes ou usa acordes do vocabulário além da sequência.
+- H4 e H5 têm os mesmos totais porque as 6 sequências não repetem acordes. Isso
+  não vale para uma sequência customizada com repetição.
+- A contagem case-sensitive de H2 é igual à case-insensitive para as 6
+  sequências, porque os acordes dessas sequências aparecem na mesma grafia no
+  CSV. O vocabulário geral tem 151 grupos de colisão de caixa (§1.3), então a
+  normalização ainda é uma decisão em aberto para sequências novas.
+- A regra sobre a string bruta e a regra sobre `musica.cifra` limpa produzem o
+  mesmo conjunto de tags para as 6. Isso não garante equivalência para músicas
+  com `|`, espaços ou tokens vazios; esses casos precisam de teste sintético.
 
 ### 3. Banco de dados: estado atual e restrições — Q3
 
@@ -890,6 +1026,45 @@ atual; elas são registradas sem escolha de tecnologia.
 10. **Ausência de infraestrutura de banco hoje.** Não há dependência, esquema,
     migração, volume, arquivo `.db` ou teste de banco no repositório; o
     `requirements.txt` tem apenas Flask e gunicorn (`requirements.txt:4-5`).
+
+#### 3.3 Hipóteses candidatas de banco (Q3)
+
+Nenhum candidato foi escolhido. Todos abaixo são embarcados, sem serviço
+externo adicional, e teriam que lidar com o mesmo fato de deploy: o
+`Dockerfile` atual não declara `VOLUME` (`Dockerfile:1-12`) e o comando do
+README não usa `-v` (`README.md:15-18`). Um arquivo gravado na camada gravável
+do container sobrevive a `docker restart`, mas não a `docker rm`/recriação sem
+volume nomeado, bind mount ou `VOLUME` na imagem. Essa é uma decisão de deploy
+separada da escolha do banco.
+
+| Candidato | O que é | Implicação no `Dockerfile`/dependências | Persistência e bordas | Como validar |
+|---|---|---|---|---|
+| SQLite em arquivo | Banco SQL embutido, uma biblioteca e um arquivo local; `sqlite3` faz parte da biblioteca padrão do CPython 3.9. | Não exigiria `pip` novo; o `Dockerfile:5-6` continuaria igual. Precisaria de caminho gravável e, para sobreviver a `docker rm`, de volume/bind mount. | Arquivo sobrevive a restart; não sobrevive a recriação sem volume. Escritas concorrentes exigem cuidado (`WAL`, `busy_timeout`, transações); o gunicorn atual não fixa `--workers` (`Dockerfile:12`). | Criar o arquivo, inserir, reiniciar, recriar com e sem volume, consultar; testar escrita concorrente. |
+| SQLite em memória | SQLite com `:memory:`, sem arquivo. | Nenhuma dependência nova; nenhum volume. | Não persiste entre reinícios; não atende sozinho ao requisito de persistência. | Útil apenas como fixture de teste; confirmar que o catálogo desaparece ao reiniciar. |
+| JSON em arquivo | Lista/dicionário serializado com `json` da biblioteca padrão. | Nenhuma dependência nova; precisaria de caminho gravável e volume para `docker rm`. | Simples e legível; sem transações, índices ou consultas; escritas concorrentes exigem lock ou substituição atômica. | Inserir, reiniciar, recriar, validar leitura e escrita concorrente. |
+| TinyDB | Banco de documentos embutido, instalado via `pip`, persistido em JSON. | Adicionaria dependência ao `requirements.txt`; a instalação continuaria via `pip` (`Dockerfile:5-6`). | Mesmo volume/bind mount; concorrência e atomicidade dependem do uso; não há SQL. | Testar criação, leitura, reinício, recriação e escrita concorrente. |
+| `shelve`/`dbm` | Armazenamento chave-valor da biblioteca padrão. | Nenhuma dependência nova; caminho gravável e volume. | Binário, sem SQL; concorrência limitada; bom para poucos registros, não para consultas relacionais. | Testar persistência, recriação e acesso concorrente. |
+| DuckDB | Banco analítico embutido, instalado via `pip`, com arquivo local. | Adicionaria dependência e wheel binária; o `Dockerfile` não tem `apt-get`/compilador (`Dockerfile:5-6`). | Arquivo sobrevive a restart; precisa de volume para recriação; normalmente um escritor por vez. | Verificar wheel para Python 3.9, criar/consultar, reiniciar e recriar. |
+| LMDB/RocksDB | Armazenamento chave-valor embutido via `pip`. | Adicionaria dependência binária; mais complexo que o necessário para um catálogo pequeno. | Arquivo + volume; concorrência e transações variam por biblioteca. | Testar instalação no slim, persistência e concorrência. |
+| PostgreSQL/MySQL externo | Serviço de banco separado do container da aplicação. | Exigiria outro serviço, rede e configuração; conflita com o container único/local-only (`00-enunciado.md:63-65`; ADR 0001). | Persistência robusta, mas fora do modelo de deploy atual. | Não é candidato sob as restrições atuais; registrar apenas como alternativa descartada por restrição. |
+
+Pontos que valem para todos os candidatos:
+
+- O catálogo é pequeno (6 sequências hoje), mas o formato precisa representar
+  ordem e repetição de acordes se a regra de matching escolhida for H2/H3/H5/H8;
+  um único campo texto/JSON e uma tabela filha de acordes têm implicações
+  diferentes de consulta e migração.
+- O processo roda como root na imagem atual, porque não há `USER` no
+  `Dockerfile`; qualquer arquivo criado pelo processo teria esse dono.
+- O gunicorn é iniciado sem `--workers` (`Dockerfile:12`); o default do gunicorn
+  é um worker síncrono, mas isso não é uma garantia se a configuração mudar.
+- Não há script de bootstrap separado: o CSV é carregado no import de
+  `main.py` (`main.py:49-98`) e o gunicorn importa `main:app`
+  (`Dockerfile:12`). Um banco precisaria inicializar schema/seed nesse mesmo
+  fluxo ou em um passo próprio.
+- O `requirements.txt` só tem Flask e gunicorn (`requirements.txt:4-5`); cada
+  candidato via `pip` muda a imagem e precisa ser compatível com Python 3.9
+  (`Dockerfile:1`).
 
 ### 4. Frontend existente: `#/porsequencia` — Q4
 
@@ -988,6 +1163,25 @@ atual; elas são registradas sem escolha de tecnologia.
   se a chave for passada manualmente: os totais por tag são 4 e 5,
   respectivamente.
 
+#### 4.5 Hipóteses candidatas de frontend (Q4)
+
+Nenhuma opção foi escolhida. A página hoje tem quatro objetos fixos
+(`sequencia.js:2-37`) e não consulta catálogo; qualquer opção abaixo teria que
+decidir se o catálogo vem do backend, se existe formulário de cadastro e como a
+lista é paginada.
+
+| Candidato | O que mudaria | O que já existe | Bordas e como validar |
+|---|---|---|---|
+| Manter os 4 objetos e só alinhar para 6 | Acrescentar `EmG` e `CA7DmG7` como `sequencia5`/`sequencia6`; nenhuma chamada nova ao backend. | A lista fixa e o `ng-repeat` (`sequencia.js:2-37`; `sequencia.html:5-8`). | Continua sem refletir catálogo real e sem cadastro; validar que as 6 queries batem com as chaves de `main.py:40-45`. |
+| Buscar o catálogo no backend ao carregar | `SequenciaController` faria uma chamada inicial e preencheria `vm.sequenciasFamosas` com a resposta. | `$http` já é injetado e usado na busca (`sequencia.js:1,77`); o `ng-repeat` já aceita uma lista. | Precisa de endpoint de listagem, estados de carregando/erro/vazio, formato estável e ordem; validar no browser e com `curl`. |
+| Renderizar o catálogo no servidor | Flask injetaria a lista no HTML/template antes de o Angular iniciar. | Flask serve `static/index.html` (`main.py:101-103`); o template é estático (`sequencia.html:1-63`). | Evita um XHR inicial, mas acopla HTML/Flask e ainda precisa alimentar o controller; validar com o template servido pelo Flask, não por `file://`. |
+| Híbrido: fallback fixo + atualização | Manter os 4/6 objetos como fallback e substituir quando a API responder. | A lista fixa atual e o `$http` existente. | Duplica a fonte de verdade e precisa definir o que fazer se a API falhar; validar com backend indisponível e com catálogo maior. |
+| Formulário de cadastro + POST | Adicionar campos de nome/acordes, validação e envio; depois recarregar o catálogo. | Não há formulário, campo ou endpoint de criação (`sequencia.html:1-63`; `main.py:170-201`). | Precisa definir validação, duplicidade, erro, ordem e atualização da lista; validar com entradas vazias, inválidas, repetidas e válidas. |
+| Manter os 4 atuais sem mudança | Nenhuma alteração no JS. | Comportamento atual de §4.2-4.4. | É o baseline, mas não atende ao requisito de a página refletir o catálogo real (`00-enunciado.md:54-55`); serve para comparar regressão. |
+| Paginação na UI | Enviar `pagina` e adicionar controles, ou buscar todas as páginas, ou aumentar `TAM_PAGINA`. | O controller não envia `pagina` (`sequencia.js:72-77`); o backend usa default `'1'` (`main.py:176`) e corta em 100 (`main.py:35,226-228`). | O `orderBy:'-popularidade'` só reordena a página recebida (`sequencia.html:42`); validar totais 199/296 e páginas 2/3. |
+| Cores e ordem das sequências | Backend devolve `cor`/posição, o frontend mapeia cores, ou a UI mantém uma paleta fixa. | Cada acorde JS tem `cor` fixa (`sequencia.js:5-8`); `index` é sempre `1` e não é lido (`sequencia.js:3,11,19,25`); a ordem vem dos `push` (`sequencia.js:34-37`). | Um catálogo só com acordes não traz cor; validar que a ordem exibida e as cores não dependem de detalhes internos do backend. |
+| Gêneros | Continuar com `GENEROS` fixo ou buscar `GET /generos`. | `vm.generos = GENEROS` (`sequencia.js:43`; `app.js:6-58`); `/generos` existe (`main.py:158-160`) mas não é usado pela página. | Validar se a lista fixa cobre os gêneros do catálogo e se o filtro continua funcionando (`main.py:178-182,266-272`). |
+
 ### 5. Conexões entre componentes e fluxo de dados
 
 - **Carga única do CSV:** `main.py:49-98` lê `data/top/dataset_final.csv`,
@@ -1024,6 +1218,100 @@ atual; elas são registradas sem escolha de tecnologia.
 
 ## Trade-offs identificados
 
-[Opções reais que você considerou para cada decisão (algoritmo, banco, frontend) e
-os prós/contras de cada uma. Isso alimenta a fase de proposta — não decida ainda
-aqui.]
+As alternativas abaixo são reais e nenhuma foi decidida. Elas se cruzam: a regra
+de matching define se `musica.cifra` ou `musica.acordes` basta; o banco define
+onde o catálogo vive; o frontend define como o catálogo chega à tela e como o
+cadastro entra.
+
+### Matching
+
+| Opção | Prós | Contras | Evidência |
+|---|---|---|---|
+| H1 — tag-like (contígua + vocabulário fechado) | Reproduz exatamente as 6 tags atuais; zero falsos positivos/negativos; critério de regressão simples. | É um artefato do gerador: qualquer acorde extra na música desqualifica; baixa recall e resultado pouco intuitivo para “a sequência aparece”; exige verificar o vocabulário inteiro da música. | 199/296/4/5/7/3 matches, iguais às tags (§2.3). |
+| H2 — contígua ordenada | Intuição direta de “a sequência aparece”; ordem e adjacência importam; inclui todas as tags. | Acordes de passagem quebram o match; gera 866/1.216/3.110/96/1.039/132, muito acima das tags; ainda precisa decidir repetição e normalização. | Todas as músicas com tag estão contidas; FP de 91 a 3.106 (§2.3). |
+| H3 — subsequência ordenada | Tolera acordes de passagem; preserva a ordem; inclui todas as tags. | Pode casar acordes espalhados pela música; 4.763/5.887/13.643/427/3.641/280, com precisão baixa; custo de varredura maior. | FP de 277 a 13.639 (§2.3). |
+| H4 — inclusão de conjunto | Simples; usa `musica.acordes` (`musica.py:17`); não precisa de ordem. | Ignora ordem e repetição; casa músicas com os mesmos acordes em qualquer ordem; 5.768/6.894/14.160/582/3.847/365. | FP de 362 a 14.156 (§2.3). |
+| H5 — inclusão de multiconjunto | Acrescenta consciência de repetição ao H4. | Continua ignorando ordem; para as 6 dá o mesmo total de H4; implementação e validação mais complexas. | Mesmos totais de H4 porque as 6 não repetem acordes (§2.3). |
+| H6/H7 — igualdade de conjunto/multiconjunto | Regra precisa; rejeita acordes extras; H7 também exige multiplicidade. | Recall baixo; H6 ainda aceita ordem trocada; H7 perde quase todas as tags; não serve como regra geral de descoberta. | H6: 395/532/4/6/7/3; H7: 5/5/0/0/0/0 (§2.3). |
+| Repetição: ignorar, colapsar runs ou exigir multiplicidade | “Ignorar” é simples; “colapsar” lida com `A;A;B`; “exigir” preserva a intenção de repetição. | Ignorar perde informação; colapsar só trata repetição imediata; exigir multiplicidade pode rejeitar músicas que repetem de outra forma. | H8 muda 866→882 e 1.216→1.235; H7 mostra que exigir multiconjunto exato é restritivo (§2.3). |
+| Normalização: caixa, enarmônicos, tokens não acordais | Aumenta a cobertura e evita falsos negativos por grafia; o gerador já lowercasa (`scripts/generate_data_set.py:12`). | Pode unir acordes distintos (`Am7`/`AM7`), exigir tabela enarmônica e mudar os totais; não há comportamento atual para copiar. | 151 grupos de colisão de caixa; 13 tokens sem letra; contagens enarmônicas diferentes (§1.3). |
+| Matching ao vivo vs. pré-computado | Ao vivo é simples e sempre reflete o catálogo; pré-computado pode ser rápido por consulta. | Ao vivo varre 59.444 músicas com cifra por requisição (`main.py:203-209`); pré-computado precisa invalidar/atualizar quando o catálogo muda e armazenar tags por sequência. | `musicas` tem 67.585 linhas; 3.505.331 tokens; `get_similares_por_sequencia` filtra a coleção inteira. |
+
+### Banco
+
+| Opção | Prós | Contras | Implicação de deploy |
+|---|---|---|---|
+| SQLite em arquivo | Biblioteca padrão; SQL, transações e schema; um arquivo; sem serviço. | Precisa de volume para `docker rm`; concorrência de escrita; schema/migração; arquivo binário no container. | `Dockerfile` pode ficar igual; persistência real exige `VOLUME` ou `-v`. |
+| SQLite em memória | Nenhum arquivo, nenhuma dependência, simples para teste. | Não persiste entre reinícios; não atende sozinho ao requisito. | Nenhum volume; catálogo perdido ao reiniciar. |
+| JSON em arquivo | Biblioteca padrão; legível; fácil de inspecionar e versionar. | Sem transações/índices; concorrência exige lock ou escrita atômica; validação manual. | Precisa de caminho gravável e volume para `docker rm`. |
+| TinyDB | API de documentos simples; persistência em JSON; instalação via `pip`. | Dependência nova; concorrência/atomicidade; sem SQL. | `requirements.txt` e imagem mudam; mesmo volume. |
+| `shelve`/`dbm` | Biblioteca padrão; chave-valor simples. | Binário, sem SQL, concorrência limitada; formato menos inspecionável. | Caminho gravável + volume. |
+| DuckDB | SQL analítico embutido; arquivo local; sem serviço. | Dependência/wheel binária; normalmente um escritor; imagem maior; compatibilidade com Python 3.9 precisa ser verificada. | `requirements.txt` muda; volume para recriação. |
+| LMDB/RocksDB | Chave-valor embutido, transações e boa concorrência. | Dependência binária; complexidade desproporcional para 6 registros; API de baixo nível. | `requirements.txt` muda; volume. |
+| PostgreSQL/MySQL externo | Concorrência e operação maduras. | Exige serviço/rede/configuração; conflita com o container único/local-only. | Não é candidato sob as restrições atuais (`00-enunciado.md:63-65`). |
+
+### Frontend
+
+| Opção | Prós | Contras | Validação |
+|---|---|---|---|
+| Alinhar a lista fixa para 6 | Menor mudança; preserva o comportamento Angular atual; não exige endpoint novo. | Continua hardcoded; não reflete catálogo real; duplica a fonte de verdade; não permite cadastro. | Comparar as 6 queries com `main.py:40-45` e conferir totais. |
+| Buscar catálogo no backend | A página passa a refletir o catálogo; uma fonte de verdade; necessário para sequências novas. | Exige endpoint, estados de carregamento/erro/vazio, contrato de formato e ordem; `json.dumps`/`Content-Type` atual precisa ser considerado. | `curl` no endpoint + teste no browser via Flask, não `file://`. |
+| Renderizar no servidor | Evita XHR inicial; catálogo já vem no HTML. | Acopla template/Flask; o controller Angular ainda precisa dos dados; menos flexível para atualizar sem reload. | Inspecionar HTML servido e testar criação/atualização. |
+| Híbrido fallback + API | Tolera API indisponível; mantém algo visível. | Duas fontes de verdade; pode exibir lista desatualizada; precisa definir precedência. | Testar API offline, catálogo vazio e catálogo maior. |
+| Formulário + POST | Permite cadastrar sequência nova, requisito da página. | Exige validação, duplicidade, erros, atualização da lista e talvez proteção contra submissão repetida; não há autenticação/CSRF hoje. | Testar entradas vazias, inválidas, repetidas, válidas e recarregamento. |
+| Paginação na UI | Permite acessar os 199/296 resultados completos. | Exige controles/estado ou busca de todas as páginas; aumenta tráfego; `orderBy` atual só ordena a página. | Conferir páginas 1/2/3 e totais de `BmGDA`/`CGAmF`. |
+| Cores/ordem/gêneros | Catálogo pode trazer metadados; UI pode continuar com paleta fixa. | Formato do catálogo cresce; `cor` e `index` atuais não têm semântica; `GENEROS` fixo pode divergir de `/generos`. | Comparar ordem/cores exibidas e filtrar por gênero. |
+
+### Dependências entre as decisões
+
+- Se a regra escolhida usar ordem/adjacência (H2/H3/H8), o armazenamento do
+  catálogo precisa preservar a ordem dos acordes; se usar conjunto (H4/H6), um
+  conjunto ou campo texto pode bastar.
+- Se a regra exigir repetição (H5/H7), o armazenamento precisa preservar
+  multiplicidade; um `set` de `musica.acordes` não serve.
+- Se o critério de regressão for “mesmos resultados das 6”, H1 é a referência
+  exata; se for “mesmas músicas com tag, mas matching mais intuitivo”, H2-H6
+  mantêm as tags e mudam o conjunto retornado.
+- Se o frontend puder cadastrar, a validação do backend precisa usar a mesma
+  definição de sequência (tokens, caixa, repetição, vazio) usada no matching.
+- Se o banco for arquivo, a decisão de volume/bind mount afeta se o catálogo
+  sobrevive a `docker rm`; se for em memória, não sobrevive nem a restart.
+- Se o frontend buscar o catálogo, o endpoint precisa de formato estável,
+  ordenação e erro; se for hardcoded, o catálogo real e a UI podem divergir
+  novamente.
+
+## Questões abertas para a proposta
+
+1. Qual é a definição aceita de “a sequência X aparece na música Y”: bloco
+   contíguo, subsequência ordenada, conjunto, multiconjunto ou a regra
+   tag-like? A ordem importa? Acordes de passagem invalidam? Repetição importa?
+2. O critério de regressão das 6 é preservar exatamente as tags atuais (H1) ou
+   preservar apenas as músicas com tag dentro de um conjunto maior (H2-H6)?
+3. Qual representação usar no matching: `musica.cifra` (ordem/repetição) ou
+   `musica.acordes` (conjunto)? A escolha precisa ser compatível com a regra e
+   com o armazenamento do catálogo.
+4. Quais normalizações entram: minúsculas, trim, enarmônicos, sufixos, tokens
+   não acordais, `|`, espaços, tokens vazios? O que acontece com acorde
+   desconhecido ou sequência vazia?
+5. Qual o desempenho esperado e o tamanho máximo do catálogo? A busca será ao
+   vivo sobre 59.444 músicas por requisição ou pré-computada/indexada? Como
+   invalidar o índice quando uma sequência é criada?
+6. Qual banco embarcado será usado? O arquivo precisa sobreviver a `docker rm`
+   ou basta `docker restart`? Será adicionado `VOLUME`, bind mount ou comando
+   documentado com `-v`?
+7. Como o catálogo será modelado: uma linha com acordes serializados ou tabela
+   de acordes com posição/repetição? Como fazer schema, seed das 6 e migrações?
+8. Qual o contrato dos endpoints de catálogo: listar, criar, editar, remover?
+   Quais status HTTP, formato de erro e ordenação? Como preservar
+   `json.dumps(...)` e o `Content-Type: text/html` atual?
+9. Como o frontend carrega o catálogo: hardcoded alinhado, XHR, render no
+   servidor ou híbrido? Como tratar carregando/erro/vazio? A página precisa
+   cadastrar ou só listar?
+10. Como a UI trata paginação, ordem, cores, `index` e gêneros? A lista de
+    gêneros continua fixa em `GENEROS` ou passa a vir de `/generos`?
+11. Quais testes mínimos: regressão das 6 contra as tags, casos sintéticos de
+    caixa/enarmônicos/repetição/vazio, persistência após restart/recriação,
+    contrato dos endpoints e smoke test no browser?
+12. Quais dados do CSV precisam de tratamento antes do matching: primeira linha
+    ignorada (`main.py:50`), `replace('NA','')` global (`main.py:53`), cifras
+    vazias (8.141 músicas), tokens não acordais e colisões de caixa?
