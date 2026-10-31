@@ -36,16 +36,16 @@
 
 > Estado observado no commit `749bc21da9f8d19cbfff25a46e1ac789ce5bb125`. Nenhum
 > arquivo de `main.py`, `musica.py`, `data/` ou `scripts/` foi alterado durante a
-> pesquisa. Os scripts descartáveis usados para caracterizar os dados ficaram em
-> `/tmp` (`tag_summary.py`, `tag_semantics.py`, `q2_report.py`, `chord_vocab.py`).
-> O servidor Flask foi executado a partir de uma venv descartável em
-> `/tmp/deciframe-venv` e encerrado ao final.
+> pesquisa. Os scripts e saídas usados para caracterizar os dados estão em
+> `docs/features/sequencias-customizadas/evidence/` (`tag_summary.py`,
+> `q2_report.py`, `hypotheses_metrics.py`, `extra_metrics.py` e os `.out`
+> correspondentes). O servidor Flask foi executado a partir de uma venv
+> descartável fora do repositório e encerrado ao final.
 >
-> O HEAD atual (`bb6c785`) apenas acrescenta o template de feedback RePPIT; o
-> código observado continua sendo o de `749bc21`. A segunda passagem acrescentou
-> os scripts descartáveis `/tmp/hypotheses_metrics.py` e
-> `/tmp/extra_metrics.py`, com saídas em `/tmp/hypotheses_metrics.out` e
-> `/tmp/extra_metrics.out`.
+> Os commits posteriores (`bb6c785`, `9c32d95`, `f122c9d`) apenas documentam a
+> pesquisa e o feedback RePPIT; o código observado continua sendo o de
+> `749bc21`. A segunda passagem acrescentou `hypotheses_metrics.py` e
+> `extra_metrics.py`, com as saídas preservadas ao lado dos scripts.
 
 ### 1. Algoritmo de matching hoje
 
@@ -189,17 +189,17 @@ decisões de normalização que podem ser combinadas com H1-H8.
 
 #### 2.1 Contagem por tag
 
-O script `/tmp/q2_report.py` replica o carregamento de `main.py` (incluindo
+O script `docs/features/sequencias-customizadas/evidence/q2_report.py` replica o carregamento de `main.py` (incluindo
 `f.readline()` em `main.py:50`, os `replace` de `main.py:53`, o split por `,` de
 `main.py:55`, o processamento de cifra de `main.py:58-61` e o split de tags de
 `main.py:63`) e aplica exatamente a condição de `main.py:209`
 (`str(id_seq) in musica.seqs_famosas`). Comando executado:
 
 ```bash
-python3 /tmp/q2_report.py
+python3 docs/features/sequencias-customizadas/evidence/q2_report.py
 ```
 
-Resultado bruto do resumo (`/tmp/tag_summary.py`):
+Resultado bruto do resumo (`docs/features/sequencias-customizadas/evidence/tag_summary.py`, saída em `docs/features/sequencias-customizadas/evidence/tag_summary.out`):
 
 ```text
 TOTAL loaded songs: 67585
@@ -235,7 +235,7 @@ Verificação ao vivo com o servidor real (`python main.py` na venv descartável
 porta 5000):
 
 ```bash
-curl -s -o /tmp/seq.json -w '%{http_code}' 'http://127.0.0.1:5000/similares?sequencia=BmGDA'
+curl -s -o /dev/null -w '%{http_code} %{content_type}\n' 'http://127.0.0.1:5000/similares?sequencia=BmGDA'
 curl -s 'http://127.0.0.1:5000/similares?sequencia=BmGDA&pagina=2'
 curl -s 'http://127.0.0.1:5000/similares?sequencia=CGAmF&pagina=2'
 curl -s 'http://127.0.0.1:5000/similares?sequencia=CGAmF&pagina=3'
@@ -296,7 +296,7 @@ retornou 5; `NOPE&generos=Rock` retornou 0.
 
 #### 2.2 Músicas retornadas por tag
 
-As listas abaixo foram geradas por `/tmp/q2_report.py` a partir da condição
+As listas abaixo foram geradas pelo script `docs/features/sequencias-customizadas/evidence/q2_report.py` a partir da condição
 `str(id_seq) in musica.seqs_famosas`. Para legibilidade, estão ordenadas por
 popularidade decrescente e incluem o `id_unico_musica`; essa não é
 necessariamente a ordem em que o endpoint pagina (ver §2.1). O total de cada
@@ -849,15 +849,15 @@ página (`main.py:35,226-228`).
 
 #### 2.3 Hipóteses candidatas aplicadas aos dados (Q2)
 
-O script `/tmp/hypotheses_metrics.py` replica o carregamento de `main.py` e
+O script `docs/features/sequencias-customizadas/evidence/hypotheses_metrics.py` replica o carregamento de `main.py` e
 compara cada hipótese de §1.5 com o conjunto de músicas que têm a tag. Comando
 executado:
 
 ```bash
-python3 /tmp/hypotheses_metrics.py
+python3 docs/features/sequencias-customizadas/evidence/hypotheses_metrics.py
 ```
 
-A saída completa ficou em `/tmp/hypotheses_metrics.out`. A tabela abaixo usa a
+A saída completa está em `docs/features/sequencias-customizadas/evidence/hypotheses_metrics.out`. A tabela abaixo usa a
 forma **total de matches (falsos positivos / falsos negativos)** em relação ao
 conjunto de tags; falsos positivos são músicas que a regra casa e a tag não
 marca, e falsos negativos são músicas marcadas pela tag que a regra não casa.

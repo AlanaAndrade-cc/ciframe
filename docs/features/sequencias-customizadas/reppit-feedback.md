@@ -26,9 +26,10 @@ Which commands I used in each phase, with which prompts.
   `01-research.md`, not `research/`, and did not create `research/`.
 - Evidence: run 1 is commit `93366c4` (`docs/features/sequencias-customizadas/
   01-research.md`). Run 2 edits the same file on top of that commit; the
-  quantitative checks are in `/tmp/hypotheses_metrics.py` and
-  `/tmp/extra_metrics.py` (outputs `/tmp/hypotheses_metrics.out` and
-  `/tmp/extra_metrics.out`). The key result is that the legacy tag rule is
+  quantitative checks are in
+  `docs/features/sequencias-customizadas/evidence/hypotheses_metrics.py` and
+  `docs/features/sequencias-customizadas/evidence/extra_metrics.py` (outputs
+  `.out` in the same directory). The key result is that the legacy tag rule is
   “contiguous sequence **and** every song chord belongs to the sequence
   vocabulary”, not merely “contiguous sequence”; this reproduces all six tag
   sets exactly.
