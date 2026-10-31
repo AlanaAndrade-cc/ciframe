@@ -1,0 +1,9 @@
+TOTAL loaded songs: 67585
+Distinct SEQ_FAMOSA tokens: 7
+Token distribution: {'': 67071, '1': 296, '0': 199, '4': 7, '3': 5, '2': 4, '5': 3}
+BmGDA id=0 count=199
+CGAmF id=1 count=296
+EmG id=2 count=4
+CA7DmG7 id=3 count=5
+GmF id=4 count=7
+CC7FFm id=5 count=3

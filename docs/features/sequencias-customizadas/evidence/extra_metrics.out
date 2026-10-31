@@ -1,0 +1,50 @@
+tokens total 3505331 distinct 6653 distinct lowercase 6500 case-collision groups 151
+case collision examples:
+  a#dim ['A#Dim', 'A#dim']
+  a#m ['A#M', 'A#m']
+  a#m7 ['A#M7', 'A#m7']
+  a/c# ['A/C#', 'A/c#']
+  a7(b13) ['A7(B13)', 'A7(b13)']
+  a7m ['A7M', 'A7m']
+  a7m(9) ['A7M(9)', 'A7m(9)']
+  a7m/9 ['A7M/9', 'A7m/9']
+  a7sus ['A7SUS', 'A7sus']
+  a7sus4 ['A7Sus4', 'A7sus4']
+  ab/eb ['Ab/EB', 'Ab/Eb']
+  ab7m ['Ab7M', 'Ab7m']
+  abm ['ABm', 'Abm']
+  abm7 ['AbM7', 'Abm7']
+  abmaj7 ['AbMaj7', 'AbmAJ7', 'Abmaj7']
+non-chord distinct 13 examples ['#11', '#13', ')', '11', '13)', '4', '5+', '7', '9', '9)', '9+', '9/11', ':']
+songs with non-chord token 21
+
+tag rule versus exact multiset:
+  BmGDA tagged 199 exact multiset 2 tagged with repeats/extra 197
+  CGAmF tagged 296 exact multiset 1 tagged with repeats/extra 295
+  EmG tagged 4 exact multiset 0 tagged with repeats/extra 4
+  CA7DmG7 tagged 5 exact multiset 0 tagged with repeats/extra 5
+  GmF tagged 7 exact multiset 0 tagged with repeats/extra 7
+  CC7FFm tagged 3 exact multiset 0 tagged with repeats/extra 3
+
+set equality false positives (top popularity):
+  BmGDA set_equal 395 fp 196
+       Mamonas Assassinas - Sábado de Sol (813726) | D;D;Bm;G;A;D;Bm;G;A;D;Bm;G;A;D;Bm;G
+       Demi Lovato - Give Your Heart A Break (264067) | G;D;Bm;A;G;D;Bm;A;G;D;Bm;A;G;D;Bm;A
+       João Neto e Frederico - Filme de Amor (208424) | D;Bm;G;A;D;Bm;G;A;G;A;G;A;D;A;G;A
+  CGAmF set_equal 532 fp 236
+       Clarice Falcão - De Todos Os Loucos do Mundo (604443) | C;F;Am;G;C;F;Am;G;C;F;Am;G;C;F;Am;G
+       Armando Filho - Quero que valorize (309183) | C;C;F;C;F;C;F;G;C;F;C;F;C;F;G;F
+       Aline Barros - Ao erguermos as mãos (212824) | Am;F;G;Am;F;G;Am;F;G;Am;F;G;Am;F;G;C
+  EmG set_equal 4 fp 0
+  CA7DmG7 set_equal 6 fp 1
+       Os Originais do Samba - Samba da Vizinha (1812) | C;Dm;A7;Dm;G7;C;G7;C;C;Dm;A7;Dm;G7;C;C;Dm
+  GmF set_equal 7 fp 0
+  CC7FFm set_equal 3 fp 0
+
+songs where sequence is contiguous but tag is absent, extra chord vocabulary:
+  BmGDA contig 866 extra 667 top extra chord tokens [('em', 1842), ('c', 961), ('e', 894), ('f#m', 744), ('f', 572)]
+  CGAmF contig 1216 extra 920 top extra chord tokens [('dm', 2352), ('em', 1352), ('d', 1198), ('e', 964), ('a', 819)]
+  EmG contig 3110 extra 3106 top extra chord tokens [('d', 31567), ('c', 20484), ('a', 17386), ('bm', 10398), ('am', 9363)]
+  CA7DmG7 contig 96 extra 91 top extra chord tokens [('f', 311), ('c7', 226), ('am', 174), ('em', 126), ('d7', 107)]
+  GmF contig 1039 extra 1032 top extra chord tokens [('bb', 7149), ('c', 5651), ('dm', 4051), ('eb', 3700), ('cm', 2443)]
+  CC7FFm contig 132 extra 129 top extra chord tokens [('g', 885), ('g7', 485), ('dm', 426), ('am', 343), ('a7', 173)]

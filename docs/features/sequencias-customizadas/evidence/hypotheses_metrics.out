@@ -1,0 +1,170 @@
+loaded 67585 songs
+empty cifra 8141
+
+rule summary per sequence: count / tp / fp / fn
+BmGDA
+  tag_rule           199 /  199 /    0 /   0
+  contig_ci          866 /  199 /  667 /   0
+  contig_cs          866 /  199 /  667 /   0
+  contig_collapse    882 /  199 /  683 /   0
+  subseq            4763 /  199 / 4564 /   0
+  set_incl          5768 /  199 / 5569 /   0
+  multiset_incl     5768 /  199 / 5569 /   0
+  exact_multiset       5 /    2 /    3 / 197
+  set_equal          395 /  199 /  196 /   0
+CGAmF
+  tag_rule           296 /  296 /    0 /   0
+  contig_ci         1216 /  296 /  920 /   0
+  contig_cs         1216 /  296 /  920 /   0
+  contig_collapse   1235 /  296 /  939 /   0
+  subseq            5887 /  296 / 5591 /   0
+  set_incl          6894 /  296 / 6598 /   0
+  multiset_incl     6894 /  296 / 6598 /   0
+  exact_multiset       5 /    1 /    4 / 295
+  set_equal          532 /  296 /  236 /   0
+EmG
+  tag_rule             4 /    4 /    0 /   0
+  contig_ci         3110 /    4 / 3106 /   0
+  contig_cs         3110 /    4 / 3106 /   0
+  contig_collapse   3110 /    4 / 3106 /   0
+  subseq           13643 /    4 / 13639 /   0
+  set_incl         14160 /    4 / 14156 /   0
+  multiset_incl    14160 /    4 / 14156 /   0
+  exact_multiset       0 /    0 /    0 /   4
+  set_equal            4 /    4 /    0 /   0
+CA7DmG7
+  tag_rule             5 /    5 /    0 /   0
+  contig_ci           96 /    5 /   91 /   0
+  contig_cs           96 /    5 /   91 /   0
+  contig_collapse     96 /    5 /   91 /   0
+  subseq             427 /    5 /  422 /   0
+  set_incl           582 /    5 /  577 /   0
+  multiset_incl      582 /    5 /  577 /   0
+  exact_multiset       0 /    0 /    0 /   5
+  set_equal            6 /    5 /    1 /   0
+GmF
+  tag_rule             7 /    7 /    0 /   0
+  contig_ci         1039 /    7 / 1032 /   0
+  contig_cs         1039 /    7 / 1032 /   0
+  contig_collapse   1039 /    7 / 1032 /   0
+  subseq            3641 /    7 / 3634 /   0
+  set_incl          3847 /    7 / 3840 /   0
+  multiset_incl     3847 /    7 / 3840 /   0
+  exact_multiset       0 /    0 /    0 /   7
+  set_equal            7 /    7 /    0 /   0
+CC7FFm
+  tag_rule             3 /    3 /    0 /   0
+  contig_ci          132 /    3 /  129 /   0
+  contig_cs          132 /    3 /  129 /   0
+  contig_collapse    132 /    3 /  129 /   0
+  subseq             280 /    3 /  277 /   0
+  set_incl           365 /    3 /  362 /   0
+  multiset_incl      365 /    3 /  362 /   0
+  exact_multiset       0 /    0 /    0 /   3
+  set_equal            3 /    3 /    0 /   0
+
+tag_rule equals contiguous_subset for all sequences?
+  BmGDA True tag=199 cs=199 only_tag=0 only_cs=0
+  CGAmF True tag=296 cs=296 only_tag=0 only_cs=0
+  EmG True tag=4 cs=4 only_tag=0 only_cs=0
+  CA7DmG7 True tag=5 cs=5 only_tag=0 only_cs=0
+  GmF True tag=7 cs=7 only_tag=0 only_cs=0
+  CC7FFm True tag=3 cs=3 only_tag=0 only_cs=0
+
+examples of false positives (top popularity):
+BmGDA
+  contig_ci        Darvin - Pensa Em Mim (2311345); Aline Barros - Ressuscita-me (2293463); Victor e Leo - Borboletas (1367090)
+  subseq           Skank - Sutilmente (3104944); Jorge e Mateus - De Tanto Te Querer (2588459); Pitty - Equalize (2438135)
+  set_incl         Red Hot Chili Peppers - Californication (4401236); Skank - Sutilmente (3104944); Jorge e Mateus - De Tanto Te Querer (2588459)
+  multiset_incl    Red Hot Chili Peppers - Californication (4401236); Skank - Sutilmente (3104944); Jorge e Mateus - De Tanto Te Querer (2588459)
+  exact_multiset   Ministério Nova Geração - Eu Anseio (2590); TNT - O Quanto Antes (2331); Ministério Nova Geração - Canção de Ester (1842)
+CGAmF
+  contig_ci        Victor e Leo - Fotos (3484507); Legião Urbana - Será (2673496); Red Hot Chili Peppers - Otherside (2123537)
+  subseq           Red Hot Chili Peppers - Californication (4401236); Victor e Leo - Fotos (3484507); Victor e Leo - Meu Eu Em Você (3003274)
+  set_incl         Red Hot Chili Peppers - Californication (4401236); Victor e Leo - Fotos (3484507); Victor e Leo - Meu Eu Em Você (3003274)
+  multiset_incl    Red Hot Chili Peppers - Californication (4401236); Victor e Leo - Fotos (3484507); Victor e Leo - Meu Eu Em Você (3003274)
+  exact_multiset   Aviões do Forró - Lapada Na Rachada (60044); Michael W. Smith - Let It Rain (16285); Danni Carlos - Pisando Em Marte (2384)
+EmG
+  contig_ci        Jorge e Mateus - De Tanto Te Querer (2588459); Victor e Leo - Fada (2499866); Pitty - Equalize (2438135)
+  subseq           Legião Urbana - Pais e Filhos (4973242); Papas da Língua - Eu Sei (4646043); Extreme - More Than Words (3902689)
+  set_incl         Legião Urbana - Pais e Filhos (4973242); Papas da Língua - Eu Sei (4646043); Extreme - More Than Words (3902689)
+  multiset_incl    Legião Urbana - Pais e Filhos (4973242); Papas da Língua - Eu Sei (4646043); Extreme - More Than Words (3902689)
+  exact_multiset   
+CA7DmG7
+  contig_ci        Bruno e Marrone - Apenas um Sorriso (166229); Maria Cecília e Rodolfo - Águas Passadas (124055); Fagner - A Noite do Meu Bem (100718)
+  subseq           Chico Buarque - João e Maria (527816); Elvis Presley - Can't help falling in love (219938); Matogrosso & Mathias - Na Hora do Adeus (217682)
+  set_incl         Natal - Então é Natal (697396); Wando - Fogo e Paixão (602784); Chico Buarque - João e Maria (527816)
+  multiset_incl    Natal - Então é Natal (697396); Wando - Fogo e Paixão (602784); Chico Buarque - João e Maria (527816)
+  exact_multiset   
+GmF
+  contig_ci        The Beatles - Hey Jude (1938036); Charlie Brown Jr. - Lugar Ao Sol (1547110); Deep Purple - Smoke on The Water (1479289)
+  subseq           Cássia Eller - Malandragem (3145635); Bruno e Marrone - Boate Azul (2736687); Chimarruts - Do Lado de Cá (2091485)
+  set_incl         Cássia Eller - Malandragem (3145635); Bruno e Marrone - Boate Azul (2736687); Chimarruts - Do Lado de Cá (2091485)
+  multiset_incl    Cássia Eller - Malandragem (3145635); Bruno e Marrone - Boate Azul (2736687); Chimarruts - Do Lado de Cá (2091485)
+  exact_multiset   
+CC7FFm
+  contig_ci        Bruno e Marrone - Acorrentado Em Você (557361); Gian e Giovani - Convite de Casamento (553032); Jorge e Mateus - Te Amo Tanto Que Nem Sei (319920)
+  subseq           Cristiano Araújo - É Com Ela Que Eu Estou (1349188); Bruno e Marrone - Acorrentado Em Você (557361); Gian e Giovani - Convite de Casamento (553032)
+  set_incl         Bruno e Marrone - Boate Azul (2736687); Cristiano Araújo - É Com Ela Que Eu Estou (1349188); Bruno e Marrone - Acorrentado Em Você (557361)
+  multiset_incl    Bruno e Marrone - Boate Azul (2736687); Cristiano Araújo - É Com Ela Que Eu Estou (1349188); Bruno e Marrone - Acorrentado Em Você (557361)
+  exact_multiset   
+
+examples of false negatives (top popularity):
+BmGDA
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+CGAmF
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+EmG
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+CA7DmG7
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+GmF
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+CC7FFm
+  contig_cs        
+  contig_collapse  
+  set_incl         
+  multiset_incl    
+
+raw-string tag generator check:
+  BmGDA equal= True only_tag= 0 only_rule= 0
+  CGAmF equal= True only_tag= 0 only_rule= 0
+  EmG equal= True only_tag= 0 only_rule= 0
+  CA7DmG7 equal= True only_tag= 0 only_rule= 0
+  GmF equal= True only_tag= 0 only_rule= 0
+  CC7FFm equal= True only_tag= 0 only_rule= 0
+
+contiguous hits split by extra-chord vocabulary:
+  BmGDA contig=866 no_extra=199 extra=667
+      extra ex: Darvin - Pensa Em Mim | Bm;G;D;A;Bm;G;D;A;Bm;G;D;A;Bm;G;D;A;Bm;G
+      extra ex: Aline Barros - Ressuscita-me | C6;G/B;Bb6;D/A;A4;D;D;A;Bm;G;D;A;Bm;G;G;D/F#;Em;Em
+  CGAmF contig=1216 no_extra=296 extra=920
+      extra ex: Victor e Leo - Fotos | C;G;Am;F;C;G;Am;F;C;G;Am;F;C;C;G;Am;F;C
+      extra ex: Legião Urbana - Será | C;G;Am;F;C;G;Am;F;C;G;Am;F;C;G;Am;F;Am;G
+  EmG contig=3110 no_extra=4 extra=3106
+      extra ex: Jorge e Mateus - De Tanto Te Querer | D9;D4;D;D4;E;D;A/C#;Bm;E7;G;Bm;A;E7;A4;A;D;A/C#;Bm
+      extra ex: Victor e Leo - Fada | G;Em;G;Em;G;Em;D;Em;D;Em;D;G;Em;G;Em;D;Em;D
+  CA7DmG7 contig=96 no_extra=5 extra=91
+      extra ex: Bruno e Marrone - Apenas um Sorriso | Dm;C;Dm;G7;C;Dm;C;Dm;G7;C;Dm;G7;Em;Am;Dm;G7;C;Dm
+      extra ex: Maria Cecília e Rodolfo - Águas Passadas | C;A7;Dm;G7;F;C;A7;Dm;F;C;D;G7;C;G7;F;C;G7;F
+  GmF contig=1039 no_extra=7 extra=1032
+      extra ex: The Beatles - Hey Jude | F;C;C7;F;Bb;F;C;F;F;C;C7;F;Bb;F;C;F;F7;Bb
+      extra ex: Charlie Brown Jr. - Lugar Ao Sol | Gm;F;Eb7+;Gm;F;Eb7+;Gm;F;Eb7+;Gm;F;Eb7+;Eb;Bb7+;F;Gm;Eb;Bb7+
+  CC7FFm contig=132 no_extra=3 extra=129
+      extra ex: Bruno e Marrone - Acorrentado Em Você | Cm;Fm;Bb;D#7M;Cm;C7;Fm;D/F#;G;Cm;Fm;Bb;D#7M;Cm;C7;Fm;D/F#;G
+      extra ex: Gian e Giovani - Convite de Casamento | C;G;Am;C;G;Am;C7;F;Dm;G;C;G;Am;C7;F;C;Dm;G
