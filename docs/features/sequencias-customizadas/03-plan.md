@@ -2,7 +2,7 @@
 
 ## Passos
 
-1. [ ] **Baseline antes de qualquer mudança de código.** Subir o código atual
+1. [x] **Baseline antes de qualquer mudança de código.** Subir o código atual
    sem alterações (`python main.py`, porta 5000, ou `docker run -p 8080:8080
    ciframe`, porta 8080) e capturar o comportamento de hoje. Não reiniciar o
    servidor no meio da captura, para não misturar ordens.
@@ -19,7 +19,7 @@
      antes de `main.py` ser tocado; depois do refactor o "antes" não é
      reproduzível com segurança.
 
-2. [ ] **Checkpoint 0 — baseline íntegro.** Validar o JSON e conferir as 6
+2. [x] **Checkpoint 0 — baseline íntegro.** Validar o JSON e conferir as 6
    chaves e as contagens acima. Encerrar o servidor de captura. Só então
    seguir para o código.
 
