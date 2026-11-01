@@ -17,6 +17,14 @@ Which commands I used in each phase, with which prompts.
   explicitly mark it out of scope. Do NOT choose a winner… Save to
   `evidence/02-proposals-draft.md`.” A follow-up prompt chose the hybrid and
   asked for `02-proposal.md`, which the command has no mode for.
+- Phase 3 / plan: `make-plan`, prompt: “Read `00-enunciado.md`,
+  `02-proposal.md`, `01-research.md` §1/§2.3/§3/§4, ADRs 0001–0003, `main.py`,
+  `musica.py`, `Dockerfile`, `requirements.txt`, `sequencia.js`,
+  `sequencia.html`, `AGENTS.md` and `README.md`… Write only `03-plan.md`; ignore
+  `templates/design_doc_template.md` because it does not exist here; use the
+  existing `03-plan.md` and keep its four sections… remove the blockquote, no
+  timelines (ordered checkpoints), baseline fixture before any code change, do
+  not re-open the decided matching/DB/API/scope.”
 
 ## research-codebase.md
 - Expected: the command’s behavior contract says “Only document what exists
@@ -133,7 +141,91 @@ Which commands I used in each phase, with which prompts.
   no-winner boundary, so the two modes stay separable.
 
 ## make-plan.md
-...
+- Expected: the command's numbered steps are to clarify scope, constraints and
+  timelines; open `templates/design_doc_template.md`, mirror its structure and
+  write the plan at `desired_location`; populate “current context,
+  requirements, design decisions, and implementation plan” with concise,
+  actionable bullets; note testing, observability, rollout and security only if
+  they influence the change, leaving sections blank when they do not; not
+  implement anything; and only make requested changes. It has no step that
+  reads the project, and `desired_location` is never defined.
+- Observed: the command assumes a template that may not exist and a document
+  shape that may not match the repo. `templates/design_doc_template.md` does
+  not exist here — there is no `templates/` directory at all — so “mirror its
+  structure” was impossible as written. The phase-3 template that does exist,
+  `docs/features/sequencias-customizadas/03-plan.md`, has four sections
+  (`Passos`, `Arquivos afetados`, `Riscos e mitigação`, `Definição de pronto`),
+  not the command's “current context / requirements / design decisions /
+  implementation plan / testing / observability / rollout / security”. Following
+  the command literally would have produced a document that contradicts the
+  feature template. Two smaller mismatches follow from the same assumption:
+  the command asks for “timelines”, which this project does not have (ordered
+  checkpoints were used instead), and it would keep blank testing, observability,
+  rollout and security sections for a local-only single-container change where
+  they do not influence anything. The bigger gap is that the command never says to
+  read anything: it does not know what `02-proposal.md`, `main.py` or
+  `musica.py` are unless they are passed in. Phase 3 exists to decompose the
+  decided proposal, yet no step opens it. Here the prompt had to enumerate the
+  files (`00-enunciado.md`, `02-proposal.md`, `01-research.md` §1/§2.3/§3/§4,
+  ADRs 0001–0003, `main.py`, `musica.py`, `Dockerfile`, `requirements.txt`,
+  `sequencia.js`, `sequencia.html`, `AGENTS.md`, `README.md`), restate the four
+  sections, forbid timelines, require a baseline fixture before any code change,
+  require a startable checkpoint after each group, and forbid re-opening the
+  matching, DB, API and scope decisions. Without that, the run would have
+  produced a generic design document with an invented structure and no
+  `file:line` grounding. `desired_location` is also undefined, so the output
+  path had to be supplied explicitly.
+- Evidence: the plan is commit `2cc7a49`
+  (`docs/features/sequencias-customizadas/03-plan.md`, 253 insertions). Every
+  citation in it (`main.py:187-189`, `main.py:203-223`, `musica.py:16`,
+  `Dockerfile:3,8,12`, `sequencia.js:2-37`, `sequencia.html:42`) exists because
+  the prompt supplied the file list; no command step opens the repository. The
+  four sections and step 1's baseline capture come from the prompt, not from the
+  command. `find . -name design_doc_template.md` returns nothing and there is no
+  `templates/` directory.
+- Suggested change: make template resolution conditional and define the output
+  path; add a required reading step before writing; use ordered checkpoints
+  when there are no deadlines; and omit sections that do not apply instead of
+  leaving them blank.
+
+```diff
+- Clarify the code change scope, constraints, and timelines before writing anything down.
++ Clarify the code change scope and constraints before writing anything down.
++ If the project has no calendar deadlines, plan ordered checkpoints instead of
++ timelines.
+```
+
+```diff
+- Open `templates/design_doc_template.md`, mirror its structure, and draft the plan as a `.md` file in `desired_location`.
++ If the project has `templates/design_doc_template.md`, mirror its structure.
++ Otherwise use the phase-3 template that already exists in the repo (for
++ example `docs/features/<feature>/03-plan.md`) and preserve its sections rather
++ than inventing a new structure. Write to the path given in the prompt; do not
++ guess `desired_location`.
+```
+
+```diff
+- Populate current context, requirements, design decisions, and implementation plan with concise, actionable bullets.
++ Before writing, read the phase-2 decision document, the research it cites, the
++ ADRs it depends on, and the files the plan will touch. Populate the plan with
++ concise, actionable bullets that cite `file:line`, and decompose the decided
++ approach instead of re-opening it.
+```
+
+```diff
+- Note testing, observability, rollout, and security sections only if they influence this change; leave sections blank when they do not apply.
++ Note testing, observability, rollout, and security only if they influence this
++ change. When they do not, omit the section entirely instead of leaving it
++ blank, and keep the project template's sections when the two disagree.
+```
+
+- Impact: removes a dead reference to a template that may not exist, defines
+  where the plan is written, and forces the command to ground the plan in the
+  actual decision, research and source files instead of producing a generic
+  design document. It also stops timelines and boilerplate sections from leaking
+  into projects whose phase-3 template has a different shape, while keeping the
+  command's useful boundaries (no implementation, only requested changes).
+
 ## implement.md
 ...
 ## Missing commands
