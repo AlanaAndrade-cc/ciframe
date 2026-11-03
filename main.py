@@ -5,6 +5,8 @@ import sys
 from musica import *
 from collections import OrderedDict
 import unicodedata
+import catalogo
+import matching
 
 app = Flask(__name__)
 
@@ -97,6 +99,11 @@ for k,v in genero_musicas.items():
 
 f.close()
 
+# o catalogo de sequencias vive em SQLite; o seed e o check rodam no import
+# porque o gunicorn importa `main:app` (Dockerfile:12).
+catalogo.init_db()
+catalogo.verifica_legado(sequencias)
+
 
 @app.route('/')
 def index():
@@ -167,12 +174,65 @@ def get_acordes():
 def get_musica(m_id):
     return json.dumps(musicas[m_id].__dict__)
 
+
+def _json_erro(mensagem, status):
+    return json.dumps({'erro': mensagem}), status
+
+
+@app.route('/sequencias', methods=['GET'])
+def get_sequencias():
+    return json.dumps(catalogo.listar())
+
+
+@app.route('/sequencias', methods=['POST'])
+def post_sequencia():
+    dados = request.get_json(silent=True)
+    if not isinstance(dados, dict):
+        return _json_erro('corpo JSON invalido', 400)
+
+    nome = dados.get('nome')
+    if not isinstance(nome, str):
+        return _json_erro('nome e obrigatorio', 400)
+    nome = nome.strip()
+    if not (1 <= len(nome) <= 80):
+        return _json_erro('nome deve ter entre 1 e 80 caracteres', 400)
+
+    acordes = dados.get('acordes')
+    if not isinstance(acordes, list):
+        return _json_erro('acordes deve ser uma lista', 400)
+    if not (1 <= len(acordes) <= 32):
+        return _json_erro('acordes deve ter entre 1 e 32 itens', 400)
+
+    limpos = []
+    for acorde in acordes:
+        if not isinstance(acorde, str):
+            return _json_erro('cada acorde deve ser uma string', 400)
+        acorde = acorde.strip()
+        if not (1 <= len(acorde) <= 16):
+            return _json_erro('cada acorde deve ter entre 1 e 16 caracteres', 400)
+        if ',' in acorde or ';' in acorde or any(c.isspace() for c in acorde):
+            return _json_erro(
+                'acorde nao pode conter virgula, ponto e virgula ou espaco', 400)
+        limpos.append(acorde)
+
+    try:
+        linha = catalogo.criar(nome, limpos)
+    except catalogo.Duplicada as duplicada:
+        return json.dumps({
+            'erro': 'sequencia ja cadastrada',
+            'id': duplicada.existente['id'],
+            'nome': duplicada.existente['nome'],
+        }), 409
+
+    return json.dumps(linha), 201
+
 @app.route('/similares')
 def get_similares():
     # tratando request
     acordes_tag = request.args.get('acordes')
     id_musica_tag = request.args.get('id_unico_musica')
     sequencia_tag = request.args.get('sequencia')
+    sequencia_id_tag = request.args.get('sequencia_id')
     pagina_tag = request.args.get('pagina','1')
 
     # se não existir, filtra por todos.
@@ -187,14 +247,25 @@ def get_similares():
     elif id_musica_tag:
         musica = musicas[id_musica_tag]
         acordes = musica.acordes
+    elif sequencia_id_tag is not None:
+        similares = []
+        try:
+            seq_id = int(sequencia_id_tag)
+        except (TypeError, ValueError):
+            seq_id = None
+
+        if seq_id is not None:
+            linha = catalogo.obter(seq_id)
+            if linha is not None:
+                similares = _similares_por_linha(linha, generos_key, pagina_tag)
+        return json.dumps(similares)
     elif sequencia_tag:
         acordes = sequencia_tag.replace(',','')
-        similares = []
+        linha = catalogo.obter_por_legacy(acordes)
 
-        if acordes in sequencias:
-            id_seq = sequencias[acordes]
-            similares = get_pagina(get_similares_por_sequencia(id_seq, generos_key), pagina_tag)
-        return json.dumps(similares)
+        if linha is None:
+            return json.dumps([])
+        return json.dumps(_similares_por_linha(linha, generos_key, pagina_tag))
 
     similares = get_similares(acordes, generos_key, id_musica_tag)
 
@@ -221,6 +292,41 @@ def get_similares_por_sequencia(id_seq, generos_key):
             similares.append(similar)
 
     return similares
+
+
+def get_similares_por_sequencia_contigua(acordes_seq, generos_key):
+    # filtra para melhor desempenho
+    collection = apply_filtro(musicas.values(), generos_key)
+
+    similares = []
+    for musica in collection:
+        if matching.casa_contigua(acordes_seq, musica.cifra):
+            similar = {
+                'id_unico_musica' : musica.id_unico_musica,
+                'id_artista' : musica.id_artista,
+                'id_musica' : musica.id_musica,
+                'nome_artista' : musica.nome_artista,
+                'nome_musica' : musica.nome_musica,
+                'popularidade' : musica.popularidade,
+                'acordes' : musica.acordes,
+                'genero' : musica.genero,
+                'url' : musica.url,
+            }
+            similares.append(similar)
+
+    return similares
+
+
+def _similares_por_linha(linha, generos_key, pagina_tag):
+    modo = linha['match_mode']
+    if modo == 'tag':
+        return get_pagina(
+            get_similares_por_sequencia(linha['id'], generos_key), pagina_tag)
+    if modo == 'contiguous':
+        return get_pagina(
+            get_similares_por_sequencia_contigua(linha['acordes'], generos_key),
+            pagina_tag)
+    raise RuntimeError('match_mode invalido: %r' % (modo,))
 
 
 def get_pagina(colecao, pagina_tag):
