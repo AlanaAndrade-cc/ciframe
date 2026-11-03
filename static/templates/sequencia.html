@@ -3,10 +3,45 @@
     <div class="col-sm-6 col-md-4 viewWindow-panel viewWindow-panel-C">
       <div class="viewWindow-panel-container">
         <h4 class="text-center">Aponte uma sequencia de acordes</h4>
+        <p class="text-muted small text-center">
+          As sequencias <strong>originais</strong> usam a marcacao historica;
+          as <strong>novas</strong> usam correspondencia contigua.
+        </p>
+
+        <p ng-if="Sequencia.carregando" class="text-center">Carregando catalogo...</p>
+        <p ng-if="Sequencia.erro" class="text-danger text-center">{{Sequencia.erro}}</p>
+        <p ng-if="!Sequencia.carregando && !Sequencia.sequenciasFamosas.length" class="text-center">
+          Nenhuma sequencia cadastrada.
+        </p>
+
         <div class="acordes-container" ng-repeat='sequencia in Sequencia.sequenciasFamosas' ng-click="Sequencia.pesquisarPorSequencia(sequencia)">
+          <span class="label" ng-class="sequencia.original ? 'label-primary' : 'label-success'">
+            {{sequencia.original ? 'original' : 'nova'}}
+          </span>
+          <small class="text-muted">{{sequencia.nome}}</small>
           <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}" acorde-checked="Sequencia.temAcorde(acordeon)" ng-repeat="acordeon in sequencia.acordes"></df-hex>
         </div>
         <br style="clear: both;">
+
+        <hr>
+        <h4 class="text-center">Cadastrar sequencia</h4>
+        <form ng-submit="Sequencia.cadastrar()">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Nome da sequencia" ng-model="Sequencia.novaSequencia.nome" maxlength="80">
+          </div>
+          <div class="form-group" ng-repeat="acorde in Sequencia.novaSequencia.acordes track by $index">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Acorde" ng-model="Sequencia.novaSequencia.acordes[$index]" maxlength="16">
+              <span class="input-group-btn">
+                <button type="button" class="btn btn-default" ng-click="Sequencia.removerAcorde($index)" ng-disabled="Sequencia.novaSequencia.acordes.length === 1">remover</button>
+              </span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-default" ng-click="Sequencia.adicionarAcorde()" ng-disabled="Sequencia.novaSequencia.acordes.length >= 32">+ acorde</button>
+          <button type="submit" class="btn btn-primary" ng-disabled="Sequencia.salvando">Cadastrar</button>
+          <p class="text-danger" ng-if="Sequencia.erroCadastro">{{Sequencia.erroCadastro}}</p>
+        </form>
+
         <button class="search-results-count" ng-if="Sequencia.showSearchResultsCount" ng-click="Sequencia.goToResults()">
           <span class="glyphicon glyphicon-triangle-bottom bounce animated infinite"></span>
           <br>
@@ -39,8 +74,7 @@
 
         <div class="row row-in">
           <div class="col-sm-6 col-lg-4"
-            ng-repeat="music in Sequencia.musics | orderBy:'-popularidade'"
-            ng-hide="music.diferenca.length">
+            ng-repeat="music in Sequencia.musics">
 
               <div class="music-card" ng-click="Sequencia.goToLirics(music)">
                 <div class="row row-in">
@@ -58,6 +92,15 @@
           </div>
         </div>
 
+        <div class="row" ng-if="Sequencia.musics.length">
+          <div class="col-xs-12 text-center">
+            <button class="btn btn-default" ng-click="Sequencia.paginaAnterior()" ng-disabled="Sequencia.pagina <= 1">Anterior</button>
+            <span>Pagina {{Sequencia.pagina}}</span>
+            <button class="btn btn-default" ng-click="Sequencia.proximaPagina()" ng-disabled="!Sequencia.temProxima">Proxima</button>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
