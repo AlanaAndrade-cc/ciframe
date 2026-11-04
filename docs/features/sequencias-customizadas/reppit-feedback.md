@@ -25,6 +25,14 @@ Which commands I used in each phase, with which prompts.
   existing `03-plan.md` and keep its four sections… remove the blockquote, no
   timelines (ordered checkpoints), baseline fixture before any code change, do
   not re-open the decided matching/DB/API/scope.”
+- Phase 4 / implementation: `implement`, prompt: “Read
+  `docs/features/sequencias-customizadas/03-plan.md` first. Implement steps
+  3–16 in order, stopping at each checkpoint to report the exact commands and
+  output. Do not regenerate `tests/fixtures/sequencias_golden.json`; it is the
+  source of truth for ‘before’. If a prompt instruction contradicts the plan,
+  follow the prompt and record the correction in `03-plan.md` before
+  continuing. Do not commit; leave the changes uncommitted for review.” Run 1
+  was baseline-only (steps 1–2). Run 2 implemented steps 3–16.
 
 ## research-codebase.md
 - Expected: the command’s behavior contract says “Only document what exists
@@ -227,7 +235,82 @@ Which commands I used in each phase, with which prompts.
   command's useful boundaries (no implementation, only requested changes).
 
 ## implement.md
-...
+- Expected: `implement.md` is one line — “Implement the plan described in
+  `/path/to/plan_md`.” — so the plan should be the source of truth: execute its
+  steps, stop where it says to stop, and run the verification it names. Here
+  the plan deliberately puts the baseline capture before any code change
+  (steps 1–2) and defines seven ordered checkpoints, so the command should
+  respect that order, leave the captured “before” artifact untouched, and be
+  usable across more than one sitting.
+- Observed: the command has no notion of a baseline, a checkpoint, a resume
+  point, or a verification gate, so it could not be run as written. Its natural
+  reading is “start implementing”, which would have edited `main.py` before the
+  baseline fixture existed and destroyed the only reliable record of the
+  pre-change behavior. The run had to be split into two calls:
+  - Call 1 executed only steps 1–2: capture the six legacy result sets into
+    `tests/fixtures/sequencias_golden.json`, validate the counts, and stop
+    before touching runtime code. The baseline is commit `fe48087`.
+  - Call 2 implemented steps 3–16 in order, stopping at checkpoints 1–7,
+    without regenerating the fixture, recording prompt-driven corrections in
+    the plan, and leaving the tree uncommitted for review. Those changes were
+    committed afterwards as `dbbe072`…`20e0c93`.
+
+  Without that split the baseline would have been captured after the first edit
+  (useless as “before”) or skipped entirely. The command also does not say to
+  stop at checkpoints, so the prompt had to restate it; it does not require the
+  plan to be updated when implementation diverges, so the seven recorded
+  corrections would have been silent; and it does not define a commit boundary,
+  so “leave uncommitted” was also a prompt instruction, and the eight-commit
+  split had to be decided by the operator outside the command.
+- Evidence: `~/.config/opencode/commands/implement.md` is exactly one line
+  (`Implement the plan described in /path/to/plan_md.`). The baseline commit
+  `fe48087` contains only `tests/fixtures/sequencias_golden.json`,
+  `tests/fixtures/capture_baseline.py` and the plan’s step-1/2 checkboxes — no
+  runtime code. The implementation commits are `dbbe072` (catalog), `8443bcd`
+  (matching), `f19215c` (API), `5c8cd72` (frontend), `9be7e20` (Docker),
+  `70471c1` (tests), `bf567d2` (AGENTS) and `20e0c93` (plan corrections). The
+  plan records the deviations the command never asked for: stdlib-only capture
+  (`03-plan.md:21-23`), `path=None` on the catalog functions
+  (`03-plan.md:35-38`), Python 3.9 syntax (`03-plan.md:44-46`), the local
+  `python3` being 3.14 without Flask (`03-plan.md:82`), id `0` being valid
+  (`03-plan.md:122`), per-origin ports (`03-plan.md:165`) and `atexit` instead
+  of `tearDownModule` (`03-plan.md:190-191`). The final suite ran 45 tests,
+  `OK`, and the six legacy sets stayed at 199/296/4/5/7/3.
+- Suggested change: turn the one-liner into an ordered contract with a
+  baseline gate, checkpoint stops, a deviation log, a final verification step,
+  and a resume/selection mode.
+
+```diff
+- Implement the plan described in /path/to/plan_md.
++ Implement the plan described in `/path/to/plan_md`, in its own order.
++
++ 1. Read the plan and the decision/research documents it cites. List its steps
++    and checkpoints before changing anything.
++ 2. Baseline gate: if the plan captures a "before" artifact (fixture, snapshot,
++    measurements), execute that step first and stop for confirmation. Do not
++    modify runtime code until it exists. Never regenerate an existing baseline
++    artifact unless the prompt explicitly asks for it.
++ 3. Implement the remaining steps in order. Stop at every checkpoint and run
++    the exact command it names; report the command and its output. Do not
++    continue past a failing checkpoint.
++ 4. If reality contradicts the plan (API, version, path, test isolation),
++    record the correction in the plan before continuing. Do not silently
++    change scope or invent a different design.
++ 5. Run the project's full verification command at the end and report the
++    result. Leave changes uncommitted unless the prompt asks for a commit, and
++    do not rewrite or drop existing work.
++
++ Support `--from <step>` and `--only <steps>` so a long plan can be resumed or
++ split across calls without re-describing the whole plan in the prompt.
+```
+
+- Impact: protects the “before” artifact from being overwritten by the first
+  edit, makes a long plan resumable without a bespoke prompt, enforces the
+  checkpoints the plan already defines, forces deviations to be documented
+  instead of silently absorbed, and makes the final test run and commit state
+  explicit. It keeps the command's original scope — implement the plan, not
+  redesign it.
+
 ## Missing commands
 - test/write-tests (phase 5 has no command)
 - adr (phase 2)
