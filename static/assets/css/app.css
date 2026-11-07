@@ -163,6 +163,47 @@ a:active {
   margin: auto;
   clear: both;
 }
+/* Catalog of chord sequences */
+.sequencia-item {
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.sequencia-item::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.sequencia-meta {
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto 4px;
+}
+.sequencia-meta .label {
+  margin-right: 6px;
+}
+.sequencia-nome {
+  color: #fff;
+  font-weight: 600;
+}
+/* Visual sequence registration */
+.acordes-selecionados {
+  width: 300px;
+  max-width: 100%;
+  min-height: 36px;
+  margin: 0 auto 8px;
+  clear: both;
+}
+.acordes-paleta {
+  margin-bottom: 2px;
+}
+.acordes-paleta .acorde-wrapper {
+  margin-right: 2px;
+}
+.sequencia-ajuda,
+.sequencia-vazio {
+  color: #fff;
+  opacity: .85;
+}
 /* Acorde directive*/
 .acorde-wrapper {
   float: left;

@@ -14,14 +14,18 @@
           Nenhuma sequencia cadastrada.
         </p>
 
-        <div class="acordes-container" ng-repeat='sequencia in Sequencia.sequenciasFamosas' ng-click="Sequencia.pesquisarPorSequencia(sequencia)">
-          <span class="label" ng-class="sequencia.original ? 'label-primary' : 'label-success'">
-            {{sequencia.original ? 'original' : 'nova'}}
-          </span>
-          <small class="text-muted">{{sequencia.nome}}</small>
-          <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}" acorde-checked="Sequencia.temAcorde(acordeon)" ng-repeat="acordeon in sequencia.acordes"></df-hex>
+        <div class="sequencia-item" ng-repeat='sequencia in Sequencia.sequenciasFamosas' ng-click="Sequencia.pesquisarPorSequencia(sequencia)">
+          <div class="sequencia-meta">
+            <span class="label" ng-class="sequencia.original ? 'label-primary' : 'label-success'">
+              {{sequencia.original ? 'original' : 'nova'}}
+            </span>
+            <span class="sequencia-nome">{{sequencia.nome}}</span>
+          </div>
+          <div class="acordes-container">
+            <df-hex acorde="{{acordeon.acorde}}" acorde-color="{{acordeon.cor}}" acorde-checked="Sequencia.temAcorde(acordeon)" ng-repeat="acordeon in sequencia.acordes"></df-hex>
+            <br style="clear: both;">
+          </div>
         </div>
-        <br style="clear: both;">
 
         <hr>
         <h4 class="text-center">Cadastrar sequencia</h4>
@@ -29,17 +33,47 @@
           <div class="form-group">
             <input type="text" class="form-control" placeholder="Nome da sequencia" ng-model="Sequencia.novaSequencia.nome" maxlength="80">
           </div>
-          <div class="form-group" ng-repeat="acorde in Sequencia.novaSequencia.acordes track by $index">
-            <div class="input-group">
-              <input type="text" class="form-control" placeholder="Acorde" ng-model="Sequencia.novaSequencia.acordes[$index]" maxlength="16">
-              <span class="input-group-btn">
-                <button type="button" class="btn btn-default" ng-click="Sequencia.removerAcorde($index)" ng-disabled="Sequencia.novaSequencia.acordes.length === 1">remover</button>
-              </span>
-            </div>
+
+          <p class="text-center sequencia-ajuda">
+            Clique nos acordes para adicionar. Clique em um acorde da
+            sequencia para remover.
+          </p>
+
+          <div class="acordes-selecionados" ng-if="Sequencia.novaSequencia.acordes.length">
+            <df-hex
+              ng-repeat="acorde in Sequencia.novaSequencia.acordes track by $index"
+              acorde="{{acorde}}"
+              acorde-color="{{Sequencia.corDoAcorde(acorde)}}"
+              acorde-checked="false"
+              small="true"
+              title="Clique para remover"
+              ng-click="Sequencia.removerAcorde($index)"></df-hex>
+            <br style="clear: both;">
           </div>
-          <button type="button" class="btn btn-default" ng-click="Sequencia.adicionarAcorde()" ng-disabled="Sequencia.novaSequencia.acordes.length >= 32">+ acorde</button>
-          <button type="submit" class="btn btn-primary" ng-disabled="Sequencia.salvando">Cadastrar</button>
-          <p class="text-danger" ng-if="Sequencia.erroCadastro">{{Sequencia.erroCadastro}}</p>
+          <p class="text-center sequencia-vazio" ng-if="!Sequencia.novaSequencia.acordes.length">
+            Nenhum acorde selecionado.
+          </p>
+
+          <div class="acordes-container acordes-paleta" ng-repeat="grupo in Sequencia.acordesPaleta">
+            <df-hex
+              ng-repeat="acordeon in grupo"
+              acorde="{{acordeon.acorde}}"
+              acorde-color="{{acordeon.cor}}"
+              acorde-checked="Sequencia.temAcordeSelecionado(acordeon.acorde)"
+              small="true"
+              title="Adicionar {{acordeon.acorde}}"
+              ng-click="Sequencia.adicionarAcorde(acordeon.acorde)"></df-hex>
+            <br style="clear: both;">
+          </div>
+
+          <p class="text-center sequencia-ajuda">
+            {{Sequencia.novaSequencia.acordes.length}}/32 acordes
+          </p>
+
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary" ng-disabled="Sequencia.salvando || !Sequencia.podeSalvar()">Cadastrar</button>
+          </div>
+          <p class="text-danger text-center" ng-if="Sequencia.erroCadastro">{{Sequencia.erroCadastro}}</p>
         </form>
 
         <button class="search-results-count" ng-if="Sequencia.showSearchResultsCount" ng-click="Sequencia.goToResults()">

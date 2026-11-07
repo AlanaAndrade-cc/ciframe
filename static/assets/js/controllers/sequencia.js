@@ -10,6 +10,60 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
     'B': '#a3bd31'
   };
 
+  // paleta da tela de acordes; copia local para nao alterar a primeira tela.
+  var ACORDES_PALETA = [
+    [
+      { 'acorde': 'C',  'cor': '#e6b300' },
+      { 'acorde': 'C#', 'cor': '#e6b300' },
+      { 'acorde': 'Cm', 'cor': '#efcc59' },
+      { 'acorde': 'C#m','cor': '#efcc59' },
+      { 'acorde': 'C7', 'cor': '#d6a602' },
+      { 'acorde': 'C#7','cor': '#d6a602' }
+    ],
+    [
+      { 'acorde': 'D',  'cor': '#cb6018' },
+      { 'acorde': 'D#', 'cor': '#cb6018' },
+      { 'acorde': 'Dm', 'cor': '#cf6f3e' },
+      { 'acorde': 'D#m','cor': '#cf6f3e' },
+      { 'acorde': 'D7', 'cor': '#bc5a1d' },
+      { 'acorde': 'D#7','cor': '#bc5a1d' }
+    ],
+    [
+      { 'acorde': 'E',  'cor': '#b72c52' },
+      { 'acorde': 'Em', 'cor': '#c5516e' },
+      { 'acorde': 'E7', 'cor': '#a92f4d' }
+    ],
+    [
+      { 'acorde': 'F',  'cor': '#ba007c' },
+      { 'acorde': 'F#', 'cor': '#ba007c' },
+      { 'acorde': 'Fm', 'cor': '#c02a88' },
+      { 'acorde': 'F#m','cor': '#c02a88' },
+      { 'acorde': 'F7', 'cor': '#ad0076' },
+      { 'acorde': 'F#7','cor': '#ad0076' }
+    ],
+    [
+      { 'acorde': 'G',  'cor': '#7b057e' },
+      { 'acorde': 'G#', 'cor': '#7b057e' },
+      { 'acorde': 'Gm', 'cor': '#882888' },
+      { 'acorde': 'G#m','cor': '#882888' },
+      { 'acorde': 'G7', 'cor': '#710c77' },
+      { 'acorde': 'G#7','cor': '#710c77' }
+    ],
+    [
+      { 'acorde': 'A',  'cor': '#76aadb' },
+      { 'acorde': 'A#', 'cor': '#76aadb' },
+      { 'acorde': 'Am', 'cor': '#89c0e9' },
+      { 'acorde': 'A#m','cor': '#89c0e9' },
+      { 'acorde': 'A7', 'cor': '#6c9ecc' },
+      { 'acorde': 'A#7','cor': '#6c9ecc' }
+    ],
+    [
+      { 'acorde': 'B',  'cor': '#a3bd31' },
+      { 'acorde': 'Bm', 'cor': '#cdd54f' },
+      { 'acorde': 'B7', 'cor': '#96b02f' }
+    ]
+  ];
+
   var corDoAcorde = function(acorde) {
     var raiz = (acorde || '').charAt(0).toUpperCase();
     return CORES[raiz] || '#2E1C74';
@@ -30,7 +84,9 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
   vm.meuGenero = "";
   vm.pagina = 1;
   vm.temProxima = false;
-  vm.novaSequencia = { nome: '', acordes: [''] };
+  vm.novaSequencia = { nome: '', acordes: [] };
+  vm.acordesPaleta = ACORDES_PALETA;
+  vm.corDoAcorde = corDoAcorde;
   vm.progressbar = ngProgressFactory.createInstance();
 
   var mapearSequencia = function(sequencia) {
@@ -123,19 +179,32 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
     }
   };
 
-  vm.adicionarAcorde = function() {
-    if (vm.novaSequencia.acordes.length < 32) {
-      vm.novaSequencia.acordes.push('');
+  vm.temAcordeSelecionado = function(acorde) {
+    return vm.novaSequencia.acordes.indexOf(acorde) > -1;
+  };
+
+  vm.adicionarAcorde = function(acorde) {
+    if (acorde && vm.novaSequencia.acordes.length < 32) {
+      vm.novaSequencia.acordes.push(acorde);
     }
   };
 
   vm.removerAcorde = function(indice) {
-    if (vm.novaSequencia.acordes.length > 1) {
+    if (indice > -1 && indice < vm.novaSequencia.acordes.length) {
       vm.novaSequencia.acordes.splice(indice, 1);
     }
   };
 
+  vm.podeSalvar = function() {
+    var nome = (vm.novaSequencia.nome || '').trim();
+    return !vm.salvando && nome.length > 0 &&
+      vm.novaSequencia.acordes.length > 0;
+  };
+
   vm.cadastrar = function() {
+    if (!vm.podeSalvar()) {
+      return;
+    }
     vm.erroCadastro = "";
     vm.salvando = true;
     $http.post('sequencias', {
@@ -144,7 +213,7 @@ angular.module('deciframeApp').controller('SequenciaController', function($http,
     })
       .success(function() {
         vm.salvando = false;
-        vm.novaSequencia = { nome: '', acordes: [''] };
+        vm.novaSequencia = { nome: '', acordes: [] };
         carregarCatalogo();
       })
       .error(function(data, status) {
