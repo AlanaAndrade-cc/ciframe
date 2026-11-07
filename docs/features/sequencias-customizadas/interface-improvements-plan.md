@@ -118,44 +118,44 @@
 
 ### Step 1 — Baseline the current screen
 
-- [ ] Start the app from the repository root:
+- [x] Start the app from the repository root:
   `.venv/bin/python main.py` (serves on `:5000`).
-- [ ] Open `http://localhost:5000/#/porsequencia` and confirm the current
+- [x] Open `http://localhost:5000/#/porsequencia` and confirm the current
   catalog loads, a catalog card starts a search, and the text-input form can
   register a sequence.
-- [ ] Record the current layout issue and the current name contrast in the
-  task notes/evidence before editing.
+- [x] Recorded the baseline: catalog rows collapsed to `height: 20px` because
+  the hex wrappers float; the name was `#777777` on `#BA007C` (`1.39:1`).
 - **Checkpoint 1:** the app is serving, the catalog is populated, and the
   existing search/registration flow works before any change.
 
 ### Step 2 — Add the local chord palette
 
-- [ ] In `static/assets/js/controllers/sequencia.js`, add `ACORDES_PALETA`
+- [x] In `static/assets/js/controllers/sequencia.js`, add `ACORDES_PALETA`
   with the seven groups copied verbatim from
   `static/assets/js/controllers/acordes.js:2-44`. Preserve group order, chord
   names, colors and the 36-chord total.
-- [ ] Expose it as `vm.acordesPaleta = ACORDES_PALETA;`.
-- [ ] Do not modify `acordes.js`, `app.js` or `#/poracordes`.
+- [x] Expose it as `vm.acordesPaleta = ACORDES_PALETA;`.
+- [x] Do not modify `acordes.js`, `app.js` or `#/poracordes`.
 - **Checkpoint 2:** the palette data matches the first screen's 36 chords and
   colors; `#/poracordes` is untouched; `#/porsequencia` still loads the
   catalog.
 
 ### Step 3 — Fix the catalog row layout and name contrast
 
-- [ ] In `static/templates/sequencia.html`, replace the catalog repeat body
+- [x] In `static/templates/sequencia.html`, replace the catalog repeat body
   (`:17-23`) with:
   - a `.sequencia-item` wrapper carrying the existing
     `ng-click="Sequencia.pesquisarPorSequencia(sequencia)"`;
   - a `.sequencia-meta` header containing the existing tag `<span>` and a
     `span.sequencia-nome` (remove `text-muted`);
   - a separate `.acordes-container` holding the existing `df-hex` repeat.
-- [ ] In `static/assets/css/app.css`, add:
+- [x] In `static/assets/css/app.css`, add:
   - `.sequencia-item { margin-bottom: 14px; cursor: pointer; }`
   - `.sequencia-item::after { content: ""; display: table; clear: both; }`
   - `.sequencia-meta { width: 300px; max-width: 100%; margin: 0 auto 4px; }`
   - `.sequencia-meta .label { margin-right: 6px; }`
   - `.sequencia-nome { color: #fff; font-weight: 600; }`
-- [ ] Keep `.acordes-container` and the `df-hex` markup unchanged so the hex
+- [x] Keep `.acordes-container` and the `df-hex` markup unchanged so the hex
   size, colors and float behavior stay the same.
 - **Checkpoint 3:** every catalog tag sits above the first chord and is
   visually separated; all chord rows share the same left edge; names are white
@@ -164,10 +164,10 @@
 
 ### Step 4 — Implement ordered selection state
 
-- [ ] In `static/assets/js/controllers/sequencia.js`, change the initial form
+- [x] In `static/assets/js/controllers/sequencia.js`, change the initial form
   state to `vm.novaSequencia = { nome: '', acordes: [] }`
   (`:33`) and update the reset in `cadastrar` (`:147`) to the same shape.
-- [ ] Add:
+- [x] Add:
   - `vm.corDoAcorde = corDoAcorde;` so the template can color selected chips;
   - `vm.temAcordeSelecionado(acorde)` → `indexOf(acorde) > -1`;
   - `vm.adicionarAcorde(acorde)` → push when
@@ -176,9 +176,11 @@
     guard;
   - `vm.podeSalvar()` → non-empty trimmed name, at least one chord, and not
     `vm.salvando`.
-- [ ] Keep `vm.cadastrar` posting `{ nome, acordes }` exactly as today; on
-  success reload the catalog and reset the form.
-- [ ] Do not change `vm.temAcorde` used by the catalog search highlighting; it
+- [x] Keep `vm.cadastrar` posting `{ nome, acordes }` exactly as today; on
+  success reload the catalog and reset the form. Guard `cadastrar` with
+  `podeSalvar()` so pressing Enter in the name field cannot bypass the disabled
+  submit button.
+- [x] Do not change `vm.temAcorde` used by the catalog search highlighting; it
   operates on the selected catalog sequence objects.
 - **Checkpoint 4:** clicking C, G, Am, F displays `C, G, Am, F` in that order;
   adding a repeated chord preserves the repetition; removing a middle chord
@@ -187,7 +189,7 @@
 
 ### Step 5 — Build the visual registration interface
 
-- [ ] In `static/templates/sequencia.html`, keep the name input
+- [x] In `static/templates/sequencia.html`, keep the name input
   (`:29-31`) and replace the text-input repeat and `+ acorde` button
   (`:32-40`) with:
   - a `.acordes-selecionados` block that repeats
@@ -207,17 +209,18 @@
     `title="Adicionar {{acordeon.acorde}}"`, and
     `ng-click="Sequencia.adicionarAcorde(acordeon.acorde)"`;
   - a `{{Sequencia.novaSequencia.acordes.length}}/32` counter.
-- [ ] Update the submit button to
+- [x] Update the submit button to
   `ng-disabled="Sequencia.salvando || !Sequencia.podeSalvar()"`.
-- [ ] Keep the existing `erroCadastro` paragraph and the form `ng-submit`.
-- [ ] In `static/assets/css/app.css`, add spacing for the palette and selected
+- [x] Keep the existing `erroCadastro` paragraph and the form `ng-submit`.
+- [x] In `static/assets/css/app.css`, add spacing for the palette and selected
   row using the existing float/clearfix pattern:
   - `.acordes-selecionados { width: 300px; max-width: 100%; min-height: 36px; margin: 0 auto 8px; clear: both; }`
   - `.acordes-paleta { margin-bottom: 2px; }`
   - `.acordes-paleta .acorde-wrapper { margin-right: 2px; }`
-- [ ] Keep the palette grouped by root exactly like `#/poracordes`; use
+  - `.sequencia-ajuda, .sequencia-vazio { color: #fff; opacity: .85; }`
+- [x] Keep the palette grouped by root exactly like `#/poracordes`; use
   `small="true"` so the buttons are 30px instead of 50px.
-- [ ] Close each floated block with `<br style="clear: both;">`, matching the
+- [x] Close each floated block with `<br style="clear: both;">`, matching the
   existing catalog/palette pattern, so the next section does not overlap.
 - **Checkpoint 5:** the registration section shows the hex palette, the
   selected sequence in order, individual removal, the name field, the counter
@@ -225,11 +228,11 @@
 
 ### Step 6 — Final verification
 
-- [ ] Run the backend suite from the repository root:
+- [x] Run the backend suite from the repository root:
   `.venv/bin/python -m unittest discover -s tests -v` → expect 45 tests, `OK`.
-- [ ] Run `git diff --check` and confirm only the intended static files
+- [x] Run `git diff --check` and confirm only the intended static files
   changed.
-- [ ] Run the manual matrix below against
+- [x] Run the manual matrix below against
   `http://localhost:5000/#/porsequencia` and `http://localhost:5000/#/poracordes`.
 - **Checkpoint 6:** all acceptance criteria pass and no existing search,
   pagination, genre-filter or registration behavior regressed.
@@ -291,20 +294,35 @@ Flask; do not add `npm`/`pytest` commands.
 
 ## Definition of done
 
-- [ ] `original` / `nova` tags render before the chord rows and are visually
+- [x] `original` / `nova` tags render before the chord rows and are visually
   separated from the hexes.
-- [ ] No tag causes a hex alignment break; all catalog rows align.
-- [ ] Sequence names are high-contrast and readable on the pink panel.
-- [ ] Registration uses small hexagonal chord buttons from the first screen's
+- [x] No tag causes a hex alignment break; all catalog rows align.
+- [x] Sequence names are high-contrast and readable on the pink panel.
+- [x] Registration uses small hexagonal chord buttons from the first screen's
   catalog.
-- [ ] Selected chords are stored and displayed in exact click order, including
+- [x] Selected chords are stored and displayed in exact click order, including
   repetitions.
-- [ ] Selected chords can be removed individually.
-- [ ] The name field and save action still work; 400/409 messages still appear.
-- [ ] Existing catalog search, genre filter, pagination and the six original
+- [x] Selected chords can be removed individually.
+- [x] The name field and save action still work; 400/409 messages still appear.
+- [x] Existing catalog search, genre filter, pagination and the six original
   sequences still work.
-- [ ] `#/poracordes` is visually unchanged.
-- [ ] Backend suite is green (`45 tests`, `OK`) and `git diff --check` is clean.
+- [x] `#/poracordes` is visually unchanged.
+- [x] Backend suite is green (`45 tests`, `OK`) and `git diff --check` is clean.
+
+## Verification results
+
+- Catalog rows now clear their floated hexes (`~80px` high); all rows share
+  the same left edge at 1440px and 800px viewports.
+- The tag/name header sits above the first hex; names compute to
+  `rgb(255, 255, 255)` with `font-weight: 600`.
+- The palette exposes the same 36 chords and colors as `#/poracordes`;
+  `#/poracordes` still renders 7 groups / 36 hexes.
+- Ordered selection, repeated chords, index-based removal, the 32-chord limit,
+  form reset, save and the 409 duplicate message were exercised in the
+  browser. Catalog search returned 100 cards; page 2, the genre filter and the
+  direct-API 400 response also passed.
+- `.venv/bin/python -m unittest discover -s tests -v` → `45 tests`, `OK`;
+  `git diff --check` is clean.
 
 ## Out of scope
 
